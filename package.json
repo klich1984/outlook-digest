@@ -9,10 +9,17 @@
   },
   "scripts": {
     "dev:once": "node scripts/index.mjs",
-    "dev:dry": "node scripts/index.mjs --dry-run"
+    "dev:dry": "node scripts/index.mjs --dry-run",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@azure/msal-node": "^3.5.0",
     "googleapis": "^144.0.0"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.9",
+    "vitest": "^4.1.9"
   }
 }
