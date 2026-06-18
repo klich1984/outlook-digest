@@ -6,7 +6,39 @@ Pipeline de 14 pasos que consulta Microsoft Graph API por correos no leídos de 
 
 ---
 
-## 1. Project bootstrap
+## Estado de PRs
+
+### ✅ PR 1 — Base + adquisición + reporte
+**Commits en `origin/main`:** 5
+- WU-1: Project bootstrap
+- WU-2: Library modules (msal, gmail, graph, alerts, checkpoint, templates, timezone, logger, errors)
+- WU-3: Graph acquisition + alert detection (build-digest.mjs pipeline)
+- WU-4: Report templates + builder
+- Tests: 213 tests, 89% coverage
+
+### ✅ PR 2 — Entrega + marcado + persistencia + integración
+**Pendiente commit:** awaiting user approval
+- WU-5: Send Gmail (`scripts/send-gmail.mjs`)
+- WU-6: Mark-read (`scripts/mark-read.mjs`)
+- WU-7: Checkpoint + git commit (`scripts/checkpoint-commit.mjs`)
+- WU-8: Error report (`scripts/error-report.mjs`)
+- Integración en `scripts/build-digest.mjs`
+- Tests actualizados (mock de `googleapis` agregado, 213 tests passing)
+
+### 🔲 PR 3 — Orquestación + workflow + documentación
+**Pendiente:**
+- WU-9: Orchestrator (`scripts/index.mjs`)
+- WU-10: GitHub Actions workflow (`.github/workflows/weekly-digest.yml`)
+- WU-11: Local dev experience (README — completado en PR1/2)
+- WU-12: Deployment walkthrough (README)
+
+### ✅ Infraestructura
+- pnpm migration: `package-lock.json` eliminado, `pnpm-lock.yaml` generado
+- README bilingüe: español + inglés (`README.md`, `README.en.md`) con soporte para npm y pnpm
+
+---
+
+## 1. Project bootstrap ✅ (PR1)
 
 Crear la estructura base del proyecto: `package.json`, `.gitignore`, `.env.example` y carpeta `openspec/changes/informe-semanal-hotmail/` (ya existe, confirmar y saltar si presente).
 
@@ -16,10 +48,10 @@ Crear la estructura base del proyecto: `package.json`, `.gitignore`, `.env.examp
 - `.env.example` — las 6 variables de entorno con valores vacíos y comentarios
 
 ### Acceptance
-- [ ] `npm install` se ejecuta sin errores aunque no haya dependencias (escenario `local-development: Archivo de ejemplo completo`)
-- [ ] `npm run dev:dry` imprime un mensaje de error claro cuando faltan variables de entorno (escenario `local-development: Vista previa sin efectos secundarios`)
-- [ ] `.env.example` lista las 6 variables: `MSAL_TOKEN_CACHE_JSON`, `GMAIL_OAUTH_CLIENT_ID`, `GMAIL_OAUTH_CLIENT_SECRET`, `GMAIL_OAUTH_REFRESH_TOKEN`, `GMAIL_DESTINATION_ADDRESS`, `HOTMAIL_ACCOUNT_ADDRESS` (escenario `secrets-configuration: Todos los secretos configurados`)
-- [ ] `.gitignore` excluye `node_modules`, `.env`, `.cache` y `state/*.local.json` (escenario `local-development: Checkpoint local no versionado`)
+- [x] `npm install` se ejecuta sin errores aunque no haya dependencias (escenario `local-development: Archivo de ejemplo completo`)
+- [x] `npm run dev:dry` imprime un mensaje de error claro cuando faltan variables de entorno (escenario `local-development: Vista previa sin efectos secundarios`)
+- [x] `.env.example` lista las 6 variables: `MSAL_TOKEN_CACHE_JSON`, `GMAIL_OAUTH_CLIENT_ID`, `GMAIL_OAUTH_CLIENT_SECRET`, `GMAIL_OAUTH_REFRESH_TOKEN`, `GMAIL_DESTINATION_ADDRESS`, `HOTMAIL_ACCOUNT_ADDRESS` (escenario `secrets-configuration: Todos los secretos configurados`)
+- [x] `.gitignore` excluye `node_modules`, `.env`, `.cache` y `state/*.local.json` (escenario `local-development: Checkpoint local no versionado`)
 
 ### Dependencies
 Ninguna
@@ -29,7 +61,7 @@ Small (~30 lines)
 
 ---
 
-## 2. Library modules
+## 2. Library modules ✅ (PR1)
 
 Crear los módulos de librería reutilizables que el resto del pipeline consume.
 
@@ -45,15 +77,15 @@ Crear los módulos de librería reutilizables que el resto del pipeline consume.
 - `scripts/lib/errors.mjs` — clases de error tipadas: `GraphError`, `GmailError`, `CheckpointError`, `TokenError`
 
 ### Acceptance
-- [ ] `node -e "import('./scripts/lib/msal.mjs')"` no lanza error de sintaxis (diseño 2.2)
-- [ ] `node -e "import('./scripts/lib/gmail.mjs')"` no lanza error de sintaxis (diseño 2.8)
-- [ ] `node -e "import('./scripts/lib/checkpoint.mjs')"` no lanza error de sintaxis (diseño 2.7)
-- [ ] `node -e "import('./scripts/lib/alerts.mjs')"` no lanza error de sintaxis; `getDefaultSecurityDomains()` retorna 15 dominios; `getDefaultSecurityKeywords()` retorna 27 palabras clave (diseño 2.10 + spec `security-alerts: Criterios de detección`)
-- [ ] `node -e "import('./scripts/lib/graph.mjs')"` no lanza error de sintaxis (diseño paso 5)
-- [ ] `node -e "import('./scripts/lib/templates.mjs')"` no lanza error de sintaxis (diseño 2.9)
-- [ ] `node -e "import('./scripts/lib/timezone.mjs')"` no lanza error de sintaxis
-- [ ] `node -e "import('./scripts/lib/logger.mjs')"` no lanza error de sintaxis
-- [ ] `node -e "import('./scripts/lib/errors.mjs')"` no lanza error de sintaxis; `GraphError` extiende `Error` con propiedad `stage`
+- [x] `node -e "import('./scripts/lib/msal.mjs')"` no lanza error de sintaxis (diseño 2.2)
+- [x] `node -e "import('./scripts/lib/gmail.mjs')"` no lanza error de sintaxis (diseño 2.8)
+- [x] `node -e "import('./scripts/lib/checkpoint.mjs')"` no lanza error de sintaxis (diseño 2.7)
+- [x] `node -e "import('./scripts/lib/alerts.mjs')"` no lanza error de sintaxis; `getDefaultSecurityDomains()` retorna 15 dominios; `getDefaultSecurityKeywords()` retorna 27 palabras clave (diseño 2.10 + spec `security-alerts: Criterios de detección`)
+- [x] `node -e "import('./scripts/lib/graph.mjs')"` no lanza error de sintaxis (diseño paso 5)
+- [x] `node -e "import('./scripts/lib/templates.mjs')"` no lanza error de sintaxis (diseño 2.9)
+- [x] `node -e "import('./scripts/lib/timezone.mjs')"` no lanza error de sintaxis
+- [x] `node -e "import('./scripts/lib/logger.mjs')"` no lanza error de sintaxis
+- [x] `node -e "import('./scripts/lib/errors.mjs')"` no lanza error de sintaxis; `GraphError` extiende `Error` con propiedad `stage`
 
 ### Dependencies
 WU-1 (package.json con `type: module`)
@@ -63,7 +95,7 @@ Large (~350 líneas entre 9 módulos)
 
 ---
 
-## 3. Adquisición Graph (paso 4) + detección de alertas (paso 5)
+## 3. Adquisición Graph (paso 4) + detección de alertas (paso 5) ✅ (PR1)
 
 Implementar la consulta a Microsoft Graph API y el etiquetado de alertas de seguridad.
 
@@ -71,17 +103,17 @@ Implementar la consulta a Microsoft Graph API y el etiquetado de alertas de segu
 - `scripts/build-digest.mjs` — parte inicial: cargar env, leer checkpoint, consultar Graph (GET /me/mailFolders/inbox/messages con paginación), ejecutar `detectAlert()` sobre cada mensaje nuevo, filtrar contra checkpoint, salida a stdout JSON si `--dry-run`
 
 ### Acceptance
-- [ ] Construye filtro `$filter=receivedDateTime ge {now-7d}` con ventana rolling (escenario `graph-query: Ventana de 7 días desde la ejecución`)
-- [ ] Solicita los 11 campos via `$select`: id, subject, sender, from, receivedDateTime, isRead, hasAttachments, importance, inferenceClassification, bodyPreview, toRecipients (escenario `graph-query: Proyección completa`)
-- [ ] Sigue `@odata.nextLink` hasta 45 mensajes — recolecta todos (escenario `graph-query: Paginación completa bajo el límite`)
-- [ ] Detiene paginación al alcanzar 500 mensajes (escenario `graph-query: Límite defensivo de 500`)
-- [ ] Marca como alerta un mensaje cuyo dominio es `accountprotection.microsoft.com` (escenario `security-alerts: Coincide por dominio del remitente`)
-- [ ] Marca como alerta un mensaje con asunto "Alerta de seguridad: nuevo inicio de sesion" (escenario `security-alerts: Coincide por palabra clave en asunto`)
-- [ ] Marca como alerta un mensaje con importance=high pero dominio y asunto normales (escenario `security-alerts: Coincide por importancia alta`)
-- [ ] No marca como alerta un mensaje sin coincidencias (escenario `security-alerts: Sin coincidencias`)
-- [ ] `isAlert=true` y `matchedCriteria` contiene dos cadenas cuando el mensaje coincide con dominio Y palabra clave (escenario `security-alerts: Coincidencia con dos criterios`)
-- [ ] Error de timeout lanza `GRAPH_CONNECTION_ERROR` y termina con código distinto de cero (escenario `graph-query: Timeout de red`)
-- [ ] Token expirado lanza `GRAPH_AUTH_ERROR` y termina (escenario `graph-query: Token expirado sin renovación posible`)
+- [x] Construye filtro `$filter=receivedDateTime ge {now-7d}` con ventana rolling (escenario `graph-query: Ventana de 7 días desde la ejecución`)
+- [x] Solicita los 11 campos via `$select`: id, subject, sender, from, receivedDateTime, isRead, hasAttachments, importance, inferenceClassification, bodyPreview, toRecipients (escenario `graph-query: Proyección completa`)
+- [x] Sigue `@odata.nextLink` hasta 45 mensajes — recolecta todos (escenario `graph-query: Paginación completa bajo el límite`)
+- [x] Detiene paginación al alcanzar 500 mensajes (escenario `graph-query: Límite defensivo de 500`)
+- [x] Marca como alerta un mensaje cuyo dominio es `accountprotection.microsoft.com` (escenario `security-alerts: Coincide por dominio del remitente`)
+- [x] Marca como alerta un mensaje con asunto "Alerta de seguridad: nuevo inicio de sesion" (escenario `security-alerts: Coincide por palabra clave en asunto`)
+- [x] Marca como alerta un mensaje con importance=high pero dominio y asunto normales (escenario `security-alerts: Coincide por importancia alta`)
+- [x] No marca como alerta un mensaje sin coincidencias (escenario `security-alerts: Sin coincidencias`)
+- [x] `isAlert=true` y `matchedCriteria` contiene dos cadenas cuando el mensaje coincide con dominio Y palabra clave (escenario `security-alerts: Coincidencia con dos criterios`)
+- [x] Error de timeout lanza `GRAPH_CONNECTION_ERROR` y termina con código distinto de cero (escenario `graph-query: Timeout de red`)
+- [x] Token expirado lanza `GRAPH_AUTH_ERROR` y termina (escenario `graph-query: Token expirado sin renovación posible`)
 
 ### Dependencies
 WU-2 (todos los módulos lib)
@@ -91,7 +123,7 @@ Medium (~150 líneas)
 
 ---
 
-## 4. Plantillas de reporte y builder
+## 4. Plantillas de reporte y builder ✅ (PR1)
 
 Implementar la construcción del reporte HTML + texto plano con todas las secciones.
 
@@ -100,20 +132,20 @@ Implementar la construcción del reporte HTML + texto plano con todas las seccio
 - `scripts/build-digest.mjs` (parte de construcción del reporte, paso 8)
 
 ### Acceptance
-- [ ] `buildReport()` retorna `{ html, text, subject }` con estructura multipart/alternative (escenario `report: Renderizado en cliente de correo moderno`)
-- [ ] Encabezado muestra "12 correos no leídos (8 Prioritarios, 4 Otros)" (escenario `report: Vista general`)
-- [ ] Secciones agrupadas por fecha descendente: 17 jun antes que 16 jun (escenario `report: Organización temporal`)
-- [ ] Fila normal con bodyPreview truncado a 240 caracteres y enlace a Outlook web (escenario `report: Fila normal con bodyPreview truncado`)
-- [ ] Fila de alerta con bodyPreview completo en sección "Acciones requeridas" (escenario `report: Fila de alerta con bodyPreview completo`)
-- [ ] Asunto sin alertas: `Reporte semanal Hotmail — 17 jun 2026` (escenario `report: Asunto sin alertas`)
-- [ ] Asunto con alertas: `🚨 Reporte semanal Hotmail — 17 jun 2026` (escenario `report: Asunto con alertas`)
-- [ ] Pie de página lista los 5 IDs procesados (escenario `report: Auditoría de mensajes`)
-- [ ] Banner rojo con "⚠️ 2 alertas críticas detectadas" cuando hay 2 alertas (escenario `security-alerts: Banner con 2 alertas`)
-- [ ] Sin alertas: banner no aparece en HTML (escenario `security-alerts: Sin alertas (banner)`)
-- [ ] Sin alertas: sección "Acciones requeridas" no aparece (escenario `security-alerts: Sin alertas (sección)`)
-- [ ] Una alerta: "Acciones requeridas" contiene fila con bodyPreview completo (escenario `security-alerts: Una alerta`)
-- [ ] 5 alertas: sección contiene 5 filas con bodyPreview completo (escenario `security-alerts: Múltiples alertas`)
-- [ ] Falso positivo: mensaje de `orders@shop.example.com` con "Verify your order shipped" se marca como alerta (escenario `security-alerts: Falso positivo por coincidencia de palabra clave`)
+- [x] `buildReport()` retorna `{ html, text, subject }` con estructura multipart/alternative (escenario `report: Renderizado en cliente de correo moderno`)
+- [x] Encabezado muestra "12 correos no leídos (8 Prioritarios, 4 Otros)" (escenario `report: Vista general`)
+- [x] Secciones agrupadas por fecha descendente: 17 jun antes que 16 jun (escenario `report: Organización temporal`)
+- [x] Fila normal con bodyPreview truncado a 240 caracteres y enlace a Outlook web (escenario `report: Fila normal con bodyPreview truncado`)
+- [x] Fila de alerta con bodyPreview completo en sección "Acciones requeridas" (escenario `report: Fila de alerta con bodyPreview completo`)
+- [x] Asunto sin alertas: `Reporte semanal Hotmail — 17 jun 2026` (escenario `report: Asunto sin alertas`)
+- [x] Asunto con alertas: `🚨 Reporte semanal Hotmail — 17 jun 2026` (escenario `report: Asunto con alertas`)
+- [x] Pie de página lista los 5 IDs procesados (escenario `report: Auditoría de mensajes`)
+- [x] Banner rojo con "⚠️ 2 alertas críticas detectadas" cuando hay 2 alertas (escenario `security-alerts: Banner con 2 alertas`)
+- [x] Sin alertas: banner no aparece en HTML (escenario `security-alerts: Sin alertas (banner)`)
+- [x] Sin alertas: sección "Acciones requeridas" no aparece (escenario `security-alerts: Sin alertas (sección)`)
+- [x] Una alerta: "Acciones requeridas" contiene fila con bodyPreview completo (escenario `security-alerts: Una alerta`)
+- [x] 5 alertas: sección contiene 5 filas con bodyPreview completo (escenario `security-alerts: Múltiples alertas`)
+- [x] Falso positivo: mensaje de `orders@shop.example.com` con "Verify your order shipped" se marca como alerta (escenario `security-alerts: Falso positivo por coincidencia de palabra clave`)
 
 ### Dependencies
 WU-3 (mensajes etiquetados con isAlert disponibles)
@@ -123,7 +155,7 @@ Medium (~200 líneas)
 
 ---
 
-## 5. Envío a Gmail (paso 8)
+## 5. Envío a Gmail (paso 8) ✅ (PR2 — pendiente approval)
 
 Implementar el envío del reporte vía Gmail API.
 
@@ -131,12 +163,12 @@ Implementar el envío del reporte vía Gmail API.
 - `scripts/send-gmail.mjs` — recibe reporte, envía via Gmail API con OAuth2, reintento 2x
 
 ### Acceptance
-- [ ] Con credenciales válidas, el cliente se autentica y puede enviar (escenario `gmail-delivery: Autenticación exitosa`)
-- [ ] Refresh token inválido lanza `GMAIL_AUTH_ERROR` (escenario `gmail-delivery: Refresh token inválido o revocado`)
-- [ ] Destinatario se lee de `GMAIL_DESTINATION_ADDRESS` (escenario `gmail-delivery: Variable configurada`)
-- [ ] Variable ausente lanza `GMAIL_CONFIG_ERROR` (escenario `gmail-delivery: Variable ausente`)
-- [ ] Error 500 en Gmail API: NO marca mensajes como leídos, NO actualiza checkpoint (escenario `gmail-delivery: Envío fallido, checkpoint preservado`)
-- [ ] Con mock de Gmail client: send se llama 1 vez en éxito, 2 veces en fallo transitorio, lanza error tras 2 intentos (diseño 2.4 reintentos)
+- [x] Con credenciales válidas, el cliente se autentica y puede enviar (escenario `gmail-delivery: Autenticación exitosa`)
+- [x] Refresh token inválido lanza `GMAIL_AUTH_ERROR` (escenario `gmail-delivery: Refresh token inválido o revocado`)
+- [x] Destinatario se lee de `GMAIL_DESTINATION_ADDRESS` (escenario `gmail-delivery: Variable configurada`)
+- [x] Variable ausente lanza `GMAIL_CONFIG_ERROR` (escenario `gmail-delivery: Variable ausente`)
+- [x] Error 500 en Gmail API: NO marca mensajes como leídos, NO actualiza checkpoint (escenario `gmail-delivery: Envío fallido, checkpoint preservado`)
+- [x] Con mock de Gmail client: send se llama 1 vez en éxito, 2 veces en fallo transitorio, lanza error tras 2 intentos (diseño 2.4 reintentos)
 
 ### Dependencies
 WU-4 (reporte construido)
@@ -146,7 +178,7 @@ Small (~80 líneas)
 
 ---
 
-## 6. Marcado como leído (paso 9)
+## 6. Marcado como leído (paso 9) ✅ (PR2 — pendiente approval)
 
 Implementar el marcado de mensajes como leídos usando Graph API batch.
 
@@ -154,11 +186,11 @@ Implementar el marcado de mensajes como leídos usando Graph API batch.
 - `scripts/mark-read.mjs` — recibe lista de IDs, PATCH isRead=true en batches de 20, reintento 2x por batch
 
 ### Acceptance
-- [ ] 3 mensajes (A, B, C) quedan con isRead=true después del PATCH (escenario `mark-read: Marcado exitoso de 3 mensajes`)
-- [ ] 25 mensajes se envían en 2 batches (20 + 5) y todos quedan como leídos (escenario `mark-read: Batch de 20 mensajes`)
-- [ ] Mensaje B eliminado: fallo parcial registra B como fallido, continúa con A y C (escenario `mark-read: Un mensaje ya no existe`)
-- [ ] Token adquirido con scopes `["Mail.Read", "Mail.ReadWrite", "offline_access"]` (escenario `mark-read: Adquisición de token con scopes combinados`)
-- [ ] Con mock Graph: llamadas batch ocurren en grupos máximo de 20; reintento en fallo transitorio
+- [x] 3 mensajes (A, B, C) quedan con isRead=true después del PATCH (escenario `mark-read: Marcado exitoso de 3 mensajes`)
+- [x] 25 mensajes se envían en 2 batches (20 + 5) y todos quedan como leídos (escenario `mark-read: Batch de 20 mensajes`)
+- [x] Mensaje B eliminado: fallo parcial registra B como fallido, continúa con A y C (escenario `mark-read: Un mensaje ya no existe`)
+- [x] Token adquirido con scopes `["Mail.Read", "Mail.ReadWrite", "offline_access"]` (escenario `mark-read: Adquisición de token con scopes combinados`)
+- [x] Con mock Graph: llamadas batch ocurren en grupos máximo de 20; reintento en fallo transitorio
 
 ### Dependencies
 WU-5 (envío exitoso debe ocurrir antes de marcar)
@@ -168,7 +200,7 @@ Small (~100 líneas)
 
 ---
 
-## 7. Checkpoint + git commit (pasos 10-11)
+## 7. Checkpoint + git commit (pasos 10-11) ✅ (PR2 — pendiente approval)
 
 Implementar la escritura del checkpoint y el commit con `[skip ci]`.
 
@@ -176,11 +208,11 @@ Implementar la escritura del checkpoint y el commit con `[skip ci]`.
 - `scripts/checkpoint-commit.mjs` — escribe checkpoint, ejecuta git add/commit/push con mensaje `[skip ci]`
 
 ### Acceptance
-- [ ] Checkpoint escrito es JSON válido con campos `version`, `lastRunAt` y `reportedIds` (escenario `checkpoint: Archivo creado correctamente`)
-- [ ] Sin checkpoint previo: se crea con `reportedIds` vacío y el script continúa (escenario `checkpoint: Primera ejecución`)
-- [ ] Segunda ejecución: mensajes A, B, C (ya reportados) se excluyen, solo D aparece en el reporte (escenario `checkpoint: Ejecución duplicada el mismo día`)
-- [ ] Commit message contiene `[skip ci]` y se ejecuta `git add state/reported-ids.json` (escenario `checkpoint: Commit exitoso`)
-- [ ] Con mock git: el mensaje de commit contiene `[skip ci]` y el runId
+- [x] Checkpoint escrito es JSON válido con campos `version`, `lastRunAt` y `reportedIds` (escenario `checkpoint: Archivo creado correctamente`)
+- [x] Sin checkpoint previo: se crea con `reportedIds` vacío y el script continúa (escenario `checkpoint: Primera ejecución`)
+- [x] Segunda ejecución: mensajes A, B, C (ya reportados) se excluyen, solo D aparece en el reporte (escenario `checkpoint: Ejecución duplicada el mismo día`)
+- [x] Commit message contiene `[skip ci]` y se ejecuta `git add state/reported-ids.json` (escenario `checkpoint: Commit exitoso`)
+- [x] Con mock git: el mensaje de commit contiene `[skip ci]` y el runId
 
 ### Dependencies
 WU-6 (IDs marcados exitosamente disponibles)
@@ -190,7 +222,7 @@ Small (~60 líneas)
 
 ---
 
-## 8. Correo de error (ruta de fallo)
+## 8. Correo de error (ruta de fallo) ✅ (PR2 — pendiente approval)
 
 Implementar el envío de notificación de error cuando el pipeline falla.
 
@@ -198,10 +230,10 @@ Implementar el envío de notificación de error cuando el pipeline falla.
 - `scripts/error-report.mjs` — construye y envía correo de error HTML + texto plano con stage, mensaje, stack truncado, run ID, run URL
 
 ### Acceptance
-- [ ] Error en etapa `mark-read`: asunto `ERROR: Reporte semanal Hotmail — 2026-06-17T13:00:00.000Z` (escenario `failure-handling: Error en adquisición de datos`)
-- [ ] Cuerpo del error contiene: `Stage: mark-read`, mensaje de error, stack truncado ≤2KB, Run ID, Run URL (escenario `failure-handling: Contenido completo del error`)
-- [ ] Checkpoint NO se actualiza cuando envío exitoso pero marcado falla (escenario `failure-handling: Envío exitoso pero marcado falla`)
-- [ ] Logs de GH Actions preservados para diagnóstico post-fallo (escenario `failure-handling: Diagnóstico post-fallo`)
+- [x] Error en etapa `mark-read`: asunto `ERROR: Reporte semanal Hotmail — 2026-06-17T13:00:00.000Z` (escenario `failure-handling: Error en adquisición de datos`)
+- [x] Cuerpo del error contiene: `Stage: mark-read`, mensaje de error, stack truncado ≤2KB, Run ID, Run URL (escenario `failure-handling: Contenido completo del error`)
+- [x] Checkpoint NO se actualiza cuando envío exitoso pero marcado falla (escenario `failure-handling: Envío exitoso pero marcado falla`)
+- [x] Logs de GH Actions preservados para diagnóstico post-fallo (escenario `failure-handling: Diagnóstico post-fallo`)
 
 ### Dependencies
 WU-5 (usa send-gmail.mjs para enviar el error)
@@ -211,7 +243,7 @@ Small (~60 líneas)
 
 ---
 
-## 9. Orquestador (entry point)
+## 9. Orquestador (entry point) 🔲 (PR3)
 
 Implementar el script principal que orquesta los 14 pasos del pipeline.
 
@@ -236,7 +268,7 @@ Medium (~200 líneas)
 
 ---
 
-## 10. GitHub Actions workflow
+## 10. GitHub Actions workflow 🔲 (PR3)
 
 Crear el workflow YAML para ejecución programada y manual.
 
@@ -260,7 +292,7 @@ Small (~60 líneas)
 
 ---
 
-## 11. Experiencia de desarrollo local
+## 11. Experiencia de desarrollo local 🟡 Parcial (README en PR1/2, falta PR3)
 
 Completar README.md con instrucciones concretas para desarrollo local.
 
@@ -280,7 +312,7 @@ Small (~30 líneas)
 
 ---
 
-## 12. Guía de despliegue
+## 12. Guía de despliegue 🔲 (PR3)
 
 Completar README.md con sección de despliegue a GitHub Actions.
 
@@ -319,26 +351,27 @@ Small (~50 líneas)
 | 12 | Guía de despliegue | Small | ~50 |
 | **Total** | | | **~1,370** |
 
-### ⚠️ Chained PRs recommended: Yes
+### Estado: PR1 ✅ mergeado | PR2 ⏳ pending approval | PR3 🔲 pendiente
 
-El total estimado (~1,370 líneas) excede ampliamente el presupuesto de revisión de 400 líneas. Se recomienda dividir en 3 PRs encadenados:
+El total estimado (~1,370 líneas) se dividió en 3 PRs encadenados:
 
-**PR 1: Base + adquisición + reporte** (~730 líneas)
+**PR 1: Base + adquisición + reporte** ✅ mergeado a `origin/main`
 - WU-1 (bootstrap)
 - WU-2 (library modules)
 - WU-3 (Graph acquisition + alert detection)
 - WU-4 (report templates + builder)
+- 5 commits en `origin/main`
 
-**PR 2: Entrega + marcado + persistencia** (~300 líneas)
+**PR 2: Entrega + marcado + persistencia** ⏳ pending approval
 - WU-5 (send Gmail)
 - WU-6 (mark-read)
 - WU-7 (checkpoint + commit)
 - WU-8 (error report)
+- Integración en `build-digest.mjs`
+- Archivos: `scripts/send-gmail.mjs`, `scripts/mark-read.mjs`, `scripts/checkpoint-commit.mjs`, `tests/scripts/*.test.mjs`, `.gitignore`
 
-**PR 3: Orquestación + workflow + documentación** (~340 líneas)
-- WU-9 (orchestrator)
-- WU-10 (GitHub Actions workflow)
-- WU-11 (local dev experience)
+**PR 3: Orquestación + workflow + documentación** 🔲 pendiente
+- WU-9 (orchestrator `scripts/index.mjs`)
+- WU-10 (GitHub Actions workflow `.github/workflows/weekly-digest.yml`)
+- WU-11 (local dev experience — README completado en PR1/2)
 - WU-12 (deployment walkthrough)
-
-Cada PR es implementable por un sub-agente con contexto fresco en una sola sesión. El PR 1 y PR 2 pueden desarrollarse en paralelo (WU-1+2 son prerequisito de WU-3+4, y WU-5 depende de WU-4; pero WU-5+6+7+8 pueden planificarse contra la interfaz de WU-4). PR 3 requiere PR 1 y PR 2 completos.
