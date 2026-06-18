@@ -17,6 +17,9 @@ state/*.local.json
 # Backup of package-lock.json
 package-lock.json.bak
 
+# OpenCode internal skill registry cache
+.atl/
+
 # Editor / OS noise
 .DS_Store
 Thumbs.db
