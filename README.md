@@ -1,5 +1,7 @@
 # Mail Digest
 
+> 🇪🇸 Estás leyendo el README en español. **[View in English →](README.en.md)**
+
 Automatización semanal que consulta los correos no leídos de una cuenta
 Hotmail (vía Microsoft Graph), construye un reporte HTML con detalle de cada
 mensaje y lo entrega a una dirección Gmail configurada por el usuario. Los
