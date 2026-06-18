@@ -43,8 +43,10 @@ los logs de GitHub Actions quedan disponibles para diagnóstico.
 ## Quick start
 
 ```bash
-# 1. Instalar dependencias
+# 1. Instalar dependencias (npm o pnpm)
 npm install
+# — o —
+pnpm install
 
 # 2. Configurar variables de entorno
 cp .env.example .env
@@ -52,10 +54,14 @@ cp .env.example .env
 
 # 3. Vista previa sin efectos secundarios (no envía, no marca como leído)
 npm run dev:dry
+# — o —
+pnpm run dev:dry
 
 # 4. Ejecución local completa (envía reporte, marca mensajes, escribe
 #    checkpoint en state/reported-ids.json — sin commit al repo)
 npm run dev:once
+# — o —
+pnpm run dev:once
 ```
 
 ## Estructura del proyecto

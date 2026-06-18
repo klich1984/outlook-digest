@@ -26,8 +26,10 @@ If something fails, the system sends an error email to the same destination Gmai
 ## Quick start
 
 ```bash
-# 1. Install dependencies
+# 1. Install dependencies (npm or pnpm)
 npm install
+# — or —
+pnpm install
 
 # 2. Configure environment variables
 cp .env.example .env
@@ -35,10 +37,14 @@ cp .env.example .env
 
 # 3. Dry run preview (no emails sent, no messages marked as read)
 npm run dev:dry
+# — or —
+pnpm run dev:dry
 
 # 4. Full local run (sends report, marks messages, writes checkpoint to
 #    state/reported-ids.json — no commit to the repo)
 npm run dev:once
+# — or —
+pnpm run dev:once
 ```
 
 ## Project structure
