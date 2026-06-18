@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 /**
- * First slice of the weekly digest pipeline.
+ * Weekly digest pipeline.
  *
- * Runs the steps that don't have side effects beyond the Graph API:
+ * PR1 ran the side-effect-free half of the pipeline and emitted the
+ * annotated message list to stdout. PR2 extends it with the side
+ * effects that deliver the report:
  *
  *   1. Load and validate environment variables (ConfigError if missing).
  *   2. Load the MSAL token cache and acquire an access token silently.
@@ -14,15 +16,24 @@
  *      { isAlert, matchedCriteria } to the message envelope.
  *   7. Annotate each message with COL-formatted fields the report
  *      builder expects (dateLabel, receivedAtCOL, senderEmail, ...).
- *   8. Emit the resulting array as JSON to stdout.
+ *   8. Build the multipart/alternative report via templates.mjs.
+ *   9. Send the report through Gmail API (sendMail with retry on
+ *      transient errors).
+ *  10. Mark the reported messages as read via Graph $batch
+ *      (mark-read.mjs, batches of 20, 1 retry on transient errors).
+ *  11. Update the local checkpoint with the IDs that mark-read
+ *      reported as succeeded. The actual `git add`/`git commit`/
+ *      `git push` lives in the orchestrator (PR3) — this function
+ *      only writes the file.
  *
- * PR2 extends this with: Gmail send, mark-read, checkpoint write, and
- * the orchestrator that ties them together. PR1 keeps the surface
- * minimal so the foundation can be reviewed in isolation.
- *
- * When this file is invoked directly (`node scripts/build-digest.mjs`)
- * it runs the full pipeline and prints JSON; when imported by the
+ * When invoked directly (`node scripts/build-digest.mjs`) it runs the
+ * full pipeline and prints the result JSON; when imported by the
  * orchestrator it exports `buildDigest()` for reuse.
+ *
+ * This file does NOT run `git add`/`git commit`/`git push`. The
+ * orchestrator (PR3) uses `buildCommitCheckpoint()` from
+ * `checkpoint-commit.mjs` to obtain the data needed for the commit
+ * and performs the git operation.
  */
 
 import { pathToFileURL } from 'node:url';
@@ -31,10 +42,11 @@ import { listRecentMessages } from './lib/graph.mjs';
 import { detectAlert } from './lib/alerts.mjs';
 import {
   readCheckpoint,
+  writeCheckpoint,
   reportedIdSet,
   filterNewMessages,
 } from './lib/checkpoint.mjs';
-import { ConfigError, GraphError, TokenError } from './lib/errors.mjs';
+import { ConfigError, GraphError, TokenError, GmailError } from './lib/errors.mjs';
 import { createLogger } from './lib/logger.mjs';
 import {
   formatDateInCOL,
@@ -42,6 +54,10 @@ import {
   formatTimeInCOL,
   getLastNDays,
 } from './lib/timezone.mjs';
+import { buildReport } from './lib/templates.mjs';
+import { buildGmailClient, sendMail } from './send-gmail.mjs';
+import { markAsRead } from './mark-read.mjs';
+import { buildCommitCheckpoint } from './checkpoint-commit.mjs';
 
 const REQUIRED_ENV = Object.freeze([
   'HOTMAIL_ACCOUNT_ADDRESS',
@@ -126,9 +142,9 @@ function annotateMessage(message, alertResult) {
 }
 
 /**
- * Runs the side-effect-free half of the pipeline. Returns the
- * annotated messages, the original checkpoint, and a `window`
- * descriptor useful for report headers in PR2.
+ * Runs the full pipeline (PR2 scope): Graph query → report build →
+ * Gmail send → mark-read → checkpoint write. Returns a rich result
+ * envelope the orchestrator (PR3) needs to perform the git commit.
  *
  * @param {{
  *   config?: ReturnType<typeof loadConfigFromEnv>,
@@ -136,16 +152,31 @@ function annotateMessage(message, alertResult) {
  *   fetchImpl?: typeof fetch,
  *   checkpointPath?: string,
  *   logger?: ReturnType<typeof createLogger>,
+ *   runId?: string,
+ *   now?: string,
+ *   sendBackoffMs?: number[],
+ *   markBackoffMs?: number[],
+ *   buildGmailClientImpl?: typeof buildGmailClient,
+ *   sendMailImpl?: typeof sendMail,
+ *   markAsReadImpl?: typeof markAsRead,
+ *   buildReportImpl?: typeof buildReport,
  * }} [opts]
  */
 export async function buildDigest(opts = {}) {
   const log = opts.logger || createLogger({ base: { stage: 'build-digest' } });
   const config = opts.config || loadConfigFromEnv();
   const daysBack = Number.isInteger(opts.daysBack) ? opts.daysBack : DEFAULT_DAYS_BACK;
+  const runId = opts.runId || process.env.GITHUB_RUN_ID || `local-${Date.now()}`;
+  const now = opts.now || new Date().toISOString();
+  const _sendGmailClient = opts.buildGmailClientImpl || buildGmailClient;
+  const _sendMail = opts.sendMailImpl || sendMail;
+  const _markAsRead = opts.markAsReadImpl || markAsRead;
+  const _buildReport = opts.buildReportImpl || buildReport;
 
   log.info('Iniciando digest semanal', {
     account: config.hotmailAddress,
     daysBack,
+    runId,
   });
 
   // Step 4 — read checkpoint (creates empty if absent).
@@ -192,20 +223,137 @@ export async function buildDigest(opts = {}) {
   const alertCount = annotated.filter((m) => m.isAlert).length;
   log.info('Alertas detectadas', { count: alertCount, total: annotated.length });
 
+  const dateRangeCOL = formatDateRangeInCOL(window.from, window.to);
+  const dateStrCOL = formatDateInCOL(window.to);
+
+  // No new messages — short-circuit. Do not send, do not mark, do not
+  // touch the checkpoint. The orchestrator (PR3) won't commit either.
+  if (annotated.length === 0) {
+    log.info('Sin mensajes nuevos; no se envía reporte ni se marcan como leídos');
+    return {
+      messages: [],
+      account: config.hotmailAddress,
+      window: {
+        fromIso: window.from.toISOString(),
+        toIso: window.to.toISOString(),
+        dateRangeCOL,
+        dateStrCOL,
+      },
+      checkpoint,
+      previousCheckpoint: checkpoint,
+      totals: {
+        fetched: rawMessages.length,
+        new: 0,
+        alerts: 0,
+        sent: false,
+        mark: null,
+      },
+      report: null,
+      runId,
+    };
+  }
+
+  // Step 8 — build the multipart/alternative report.
+  const totals = {
+    total: annotated.length,
+    focused: annotated.filter((m) => (m.inferenceClassification || m.classification) === 'focused').length,
+    other: annotated.filter((m) => (m.inferenceClassification || m.classification) === 'other').length,
+  };
+  const report = _buildReport({
+    messages: annotated,
+    alerts: annotated.filter((m) => m.isAlert),
+    account: config.hotmailAddress,
+    dateRange: dateRangeCOL,
+    dateStr: dateStrCOL,
+    totals,
+  });
+
+  // Step 9 — send via Gmail.
+  const gmailClient = await _sendGmailClient({
+    clientId: config.gmailClientId,
+    clientSecret: config.gmailClientSecret,
+    refreshToken: config.gmailRefreshToken,
+  });
+  const sendResult = await _sendMail(gmailClient, {
+    from: config.gmailDestination,
+    to: config.gmailDestination,
+    subject: report.subject,
+    html: report.html,
+    text: report.text,
+    backoffMs: opts.sendBackoffMs,
+  });
+  log.info('Reporte enviado a Gmail', { messageId: sendResult.messageId });
+
+  // Step 10 — mark as read.
+  const messageIds = annotated.map((m) => m.id);
+  const markResult = await _markAsRead({
+    accessToken,
+    userPrincipalName: config.hotmailAddress,
+    messageIds,
+    onRetry: (attempt, max) => log.warn('Reintentando batch mark-read', { attempt, max }),
+    backoffMs: opts.markBackoffMs,
+    fetchImpl: opts.fetchImpl,
+  });
+  log.info('Marcado como leído', {
+    succeeded: markResult.succeeded.length,
+    failed: markResult.failed.length,
+  });
+
+  // Step 11 — checkpoint write. Only the succeeded IDs go in; failed
+  // IDs are intentionally left out so the next run retries them.
+  let workingCheckpoint = checkpoint;
+  let commitPlan = null;
+  if (markResult.succeeded.length > 0) {
+    commitPlan = buildCommitCheckpoint({
+      checkpoint: workingCheckpoint,
+      runId,
+      newIds: markResult.succeeded,
+      now,
+    });
+    await writeCheckpoint(opts.checkpointPath, commitPlan.checkpoint);
+    log.info('Checkpoint local actualizado', {
+      newCount: commitPlan.newCount,
+    });
+  } else {
+    log.warn('mark-read no marcó ningún mensaje; checkpoint NO se actualiza');
+  }
+
   return {
     messages: annotated,
     account: config.hotmailAddress,
     window: {
       fromIso: window.from.toISOString(),
       toIso: window.to.toISOString(),
-      dateRangeCOL: formatDateRangeInCOL(window.from, window.to),
+      dateRangeCOL,
+      dateStrCOL,
     },
-    checkpoint,
+    checkpoint: commitPlan ? commitPlan.checkpoint : checkpoint,
+    previousCheckpoint: checkpoint,
     totals: {
       fetched: rawMessages.length,
-      new: newMessages.length,
+      new: annotated.length,
       alerts: alertCount,
+      sent: true,
+      mark: {
+        succeeded: markResult.succeeded.length,
+        failed: markResult.failed.length,
+      },
     },
+    report: {
+      messageId: sendResult.messageId,
+      subject: report.subject,
+      html: report.html,
+      text: report.text,
+    },
+    mark: markResult,
+    commitPlan: commitPlan
+      ? {
+          checkpointJson: commitPlan.checkpointJson,
+          commitMessage: commitPlan.commitMessage,
+          newCount: commitPlan.newCount,
+        }
+      : null,
+    runId,
   };
 }
 
