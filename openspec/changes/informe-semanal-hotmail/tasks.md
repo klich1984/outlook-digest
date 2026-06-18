@@ -25,12 +25,18 @@ Pipeline de 14 pasos que consulta Microsoft Graph API por correos no leídos de 
 - Integración en `scripts/build-digest.mjs`
 - Tests actualizados (mock de `googleapis` agregado, 213 tests passing)
 
-### 🔲 PR 3 — Orquestación + workflow + documentación
+### 🔲 PR 3a — Orquestador + tests (~450 líneas)
 **Pendiente:**
 - WU-9: Orchestrator (`scripts/index.mjs`)
+- Tests del orchestrator (`tests/scripts/index.test.mjs`)
+
+### 🔲 PR 3b — Workflow + documentación (~240 líneas)
+**Pendiente:**
 - WU-10: GitHub Actions workflow (`.github/workflows/weekly-digest.yml`)
-- WU-11: Local dev experience (README — completado en PR1/2)
-- WU-12: Deployment walkthrough (README)
+- WU-11: Local dev experience (extender README)
+- WU-12: Deployment walkthrough (extender README)
+
+> **Decisión:** PR3 se dividió en 3a + 3b porque el total (~690 líneas) excede el presupuesto de revisión de 400 líneas. PR3a implementa y testea el orquestador; PR3b agrega el workflow YAML y la documentación de despliegue.
 
 ### ✅ Infraestructura
 - pnpm migration: `package-lock.json` eliminado, `pnpm-lock.yaml` generado
@@ -243,7 +249,7 @@ Small (~60 líneas)
 
 ---
 
-## 9. Orquestador (entry point) 🔲 (PR3)
+## 9. Orquestador (entry point) 🔲 (PR3a)
 
 Implementar el script principal que orquesta los 14 pasos del pipeline.
 
@@ -268,7 +274,7 @@ Medium (~200 líneas)
 
 ---
 
-## 10. GitHub Actions workflow 🔲 (PR3)
+## 10. GitHub Actions workflow 🔲 (PR3b)
 
 Crear el workflow YAML para ejecución programada y manual.
 
@@ -292,7 +298,7 @@ Small (~60 líneas)
 
 ---
 
-## 11. Experiencia de desarrollo local 🟡 Parcial (README en PR1/2, falta PR3)
+## 11. Experiencia de desarrollo local 🟡 Parcial (README en PR1/2, falta PR3b)
 
 Completar README.md con instrucciones concretas para desarrollo local.
 
@@ -312,7 +318,7 @@ Small (~30 líneas)
 
 ---
 
-## 12. Guía de despliegue 🔲 (PR3)
+## 12. Guía de despliegue 🔲 (PR3b)
 
 Completar README.md con sección de despliegue a GitHub Actions.
 
@@ -351,9 +357,9 @@ Small (~50 líneas)
 | 12 | Guía de despliegue | Small | ~50 |
 | **Total** | | | **~1,370** |
 
-### Estado: PR1 ✅ mergeado | PR2 ⏳ pending approval | PR3 🔲 pendiente
+### Estado: PR1 ✅ mergeado | PR2 ✅ mergeado | PR3a 🔲 pendiente | PR3b 🔲 pendiente
 
-El total estimado (~1,370 líneas) se dividió en 3 PRs encadenados:
+El total estimado (~1,370 líneas) se dividió en 4 PRs encadenados:
 
 **PR 1: Base + adquisición + reporte** ✅ mergeado a `origin/main`
 - WU-1 (bootstrap)
@@ -362,16 +368,21 @@ El total estimado (~1,370 líneas) se dividió en 3 PRs encadenados:
 - WU-4 (report templates + builder)
 - 5 commits en `origin/main`
 
-**PR 2: Entrega + marcado + persistencia** ⏳ pending approval
+**PR 2: Entrega + marcado + persistencia + pnpm migration** ✅ mergeado a `origin/main`
 - WU-5 (send Gmail)
 - WU-6 (mark-read)
 - WU-7 (checkpoint + commit)
-- WU-8 (error report)
 - Integración en `build-digest.mjs`
-- Archivos: `scripts/send-gmail.mjs`, `scripts/mark-read.mjs`, `scripts/checkpoint-commit.mjs`, `tests/scripts/*.test.mjs`, `.gitignore`
+- pnpm migration
+- Archivos: `scripts/send-gmail.mjs`, `scripts/mark-read.mjs`, `scripts/checkpoint-commit.mjs`, `tests/scripts/*.test.mjs`, `.gitignore`, `pnpm-lock.yaml`
 
-**PR 3: Orquestación + workflow + documentación** 🔲 pendiente
+**PR 3a: Orquestador + tests** 🔲 pendiente (~450 líneas)
 - WU-9 (orchestrator `scripts/index.mjs`)
+- Tests del orchestrator (`tests/scripts/index.test.mjs`)
+
+**PR 3b: Workflow + documentación** 🔲 pendiente (~240 líneas)
 - WU-10 (GitHub Actions workflow `.github/workflows/weekly-digest.yml`)
-- WU-11 (local dev experience — README completado en PR1/2)
-- WU-12 (deployment walkthrough)
+- WU-11 (local dev experience — extender README)
+- WU-12 (deployment walkthrough — extender README)
+
+> **Decisión de split:** PR3 se dividió en 3a + 3b porque el total (~690 líneas) excede el presupuesto de revisión de 400 líneas. PR3a implementa y testea el orquestador; PR3b agrega el workflow YAML y la documentación de despliegue.
