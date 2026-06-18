@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Local env files (the .env.example template IS tracked)
+.env
+.env.*
+!.env.example
+
+# Local MSAL cache used during interactive login
+.cache/
+
+# Local-only state files used during local development runs.
+# state/reported-ids.json IS tracked because the GitHub Actions workflow
+# commits it after each successful run with [skip ci].
+state/*.local.json
+
+# Backup of package-lock.json
+package-lock.json.bak
+
+# Editor / OS noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
