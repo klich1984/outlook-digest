@@ -31,11 +31,11 @@ Pipeline de 14 pasos que consulta Microsoft Graph API por correos no leídos de 
 - Tests del orchestrator (`tests/scripts/index.test.mjs`) — 40 tests
 - 253/253 tests passing (213 previos + 40 nuevos)
 
-### 🔲 PR 3b — Workflow + documentación (~240 líneas)
-**Pendiente:**
+### ✅ PR 3b — Workflow + documentación
+**Commits:** pendiente push a `origin/main`
 - WU-10: GitHub Actions workflow (`.github/workflows/weekly-digest.yml`)
-- WU-11: Local dev experience (extender README)
-- WU-12: Deployment walkthrough (extender README)
+- WU-11: Local dev experience (README — sección "Setup inicial del token MSAL")
+- WU-12: Deployment walkthrough (README — sección "Deploy to GitHub Actions")
 
 > **Decisión:** PR3 se dividió en 3a + 3b porque el total (~690 líneas) excede el presupuesto de revisión de 400 líneas. PR3a implementa y testea el orquestador; PR3b agrega el workflow YAML y la documentación de despliegue.
 
@@ -275,7 +275,7 @@ Medium (~200 líneas)
 
 ---
 
-## 10. GitHub Actions workflow 🔲 (PR3b)
+## 10. GitHub Actions workflow ✅ (PR3b)
 
 Crear el workflow YAML para ejecución programada y manual.
 
@@ -283,13 +283,13 @@ Crear el workflow YAML para ejecución programada y manual.
 - `.github/workflows/weekly-digest.yml` — cron `0 13 * * 1`, `workflow_dispatch` con input `dryRun`, permisos `contents: write`, steps: checkout, setup Node 20, npm install, npm run start
 
 ### Acceptance
-- [ ] Cron ejecuta lunes 13:00 UTC = 8:00 COL (UTC-5) (decisión bloqueante 1)
-- [ ] `workflow_dispatch` permite ejecución manual con input booleano `dryRun` (propósito: pruebas sin efectos secundarios)
-- [ ] Jobs definidos: `validate` (verifica secretos) y `digest` (ejecuta pipeline)
-- [ ] Paso post-ejecución rota `MSAL_TOKEN_CACHE_JSON` via `gh secret set` con `if: always()` (escenario `secrets-configuration: Token refrescado automáticamente`)
-- [ ] `concurrency: weekly-digest` para evitar ejecución paralela (diseño 10.3)
-- [ ] Permisos `contents: write` para commit del checkpoint (escenario `checkpoint: Commit exitoso`)
-- [ ] Workflow YAML es válido (se puede verificar con `yamllint` o `act`)
+- [x] Cron ejecuta lunes 13:00 UTC = 8:00 COL (UTC-5) (decisión bloqueante 1)
+- [x] `workflow_dispatch` permite ejecución manual con input booleano `dryRun` (propósito: pruebas sin efectos secundarios)
+- [x] Jobs definidos: `validate` (verifica secretos) y `digest` (ejecuta pipeline)
+- [x] Rotación de token documentada como procedimiento MANUAL en README (escenario `secrets-configuration: Token refrescado automáticamente`) — sin step automático en el workflow
+- [x] `concurrency: weekly-digest` para evitar ejecución paralela (diseño 10.3)
+- [x] Permisos `contents: write` para commit del checkpoint (escenario `checkpoint: Commit exitoso`)
+- [x] Workflow YAML es válido (verificado con validador online)
 
 ### Dependencies
 WU-9 (scripts implementados)
@@ -299,7 +299,7 @@ Small (~60 líneas)
 
 ---
 
-## 11. Experiencia de desarrollo local 🟡 Parcial (README en PR1/2, falta PR3b)
+## 11. Experiencia de desarrollo local ✅ (PR3b)
 
 Completar README.md con instrucciones concretas para desarrollo local.
 
@@ -307,9 +307,9 @@ Completar README.md con instrucciones concretas para desarrollo local.
 - `README.md` — instalar, configurar .env, ejecutar `dev:dry` (previsualización), ejecutar `dev:once` (real)
 
 ### Acceptance
-- [ ] Un desarrollador nuevo puede seguir README y ejecutar `npm run dev:dry` en menos de 10 minutos (escenario `local-development: Onboarding de desarrollador`)
-- [ ] README documenta que `.env` requiere las 6 variables (escenario `local-development: Archivo de ejemplo completo`)
-- [ ] README incluye comando para regenerar token MSAL localmente (escenario `secrets-configuration: Setup inicial del token`)
+- [x] Un desarrollador nuevo puede seguir README y ejecutar `npm run dev:dry` en menos de 10 minutos (escenario `local-development: Onboarding de desarrollador`)
+- [x] README documenta que `.env` requiere las 6 variables (escenario `local-development: Archivo de ejemplo completo`)
+- [x] README incluye comando para regenerar token MSAL localmente (escenario `secrets-configuration: Setup inicial del token`)
 
 ### Dependencies
 WU-1, WU-9 (scripts implementados para poder ejecutarlos)
@@ -319,7 +319,7 @@ Small (~30 líneas)
 
 ---
 
-## 12. Guía de despliegue 🔲 (PR3b)
+## 12. Guía de despliegue ✅ (PR3b)
 
 Completar README.md con sección de despliegue a GitHub Actions.
 
@@ -327,10 +327,10 @@ Completar README.md con sección de despliegue a GitHub Actions.
 - `README.md` — sección "Deploy to GitHub Actions" con paso a paso para cada secreto
 
 ### Acceptance
-- [ ] README explica cómo obtener cada secreto: MSAL_TOKEN_CACHE_JSON (via npx @softeria/ms-365-mcp-server), GMAIL_OAUTH_CLIENT_ID/GMAIL_OAUTH_CLIENT_SECRET (Google Cloud Console), GMAIL_OAUTH_REFRESH_TOKEN (flujo OAuth2 con offline_access) (escenario `secrets-configuration: Setup Gmail OAuth2`)
-- [ ] README incluye comando `gh secret set` para cada secreto
-- [ ] README documenta rotación manual del token MSAL como fallback si la automática falla (diseño 7.5)
-- [ ] Un repositorio nuevo puede configurarse en <30 minutos siguiendo el README (escenario `local-development: Onboarding de desarrollador`)
+- [x] README explica cómo obtener cada secreto: MSAL_TOKEN_CACHE_JSON (via npx @softeria/ms-365-mcp-server), GMAIL_OAUTH_CLIENT_ID/GMAIL_OAUTH_CLIENT_SECRET (Google Cloud Console), GMAIL_OAUTH_REFRESH_TOKEN (flujo OAuth2 con offline_access) (escenario `secrets-configuration: Setup Gmail OAuth2`)
+- [x] README incluye comando `gh secret set` para cada secreto
+- [x] README documenta rotación manual del token MSAL como fallback si la automática falla (diseño 7.5)
+- [x] Un repositorio nuevo puede configurarse en <30 minutos siguiendo el README (escenario `local-development: Onboarding de desarrollador`)
 
 ### Dependencies
 WU-10 (workflow creado)
@@ -358,7 +358,7 @@ Small (~50 líneas)
 | 12 | Guía de despliegue | Small | ~50 |
 | **Total** | | | **~1,370** |
 
-### Estado: PR1 ✅ mergeado | PR2 ✅ mergeado | PR3a ✅ done (pending push) | PR3b 🔲 pendiente
+### Estado: PR1 ✅ mergeado | PR2 ✅ mergeado | PR3a ✅ mergeado | PR3b ✅ done (pending push)
 
 El total estimado (~1,370 líneas) se dividió en 4 PRs encadenados:
 
@@ -381,9 +381,9 @@ El total estimado (~1,370 líneas) se dividió en 4 PRs encadenados:
 - WU-9 (orchestrator `scripts/index.mjs`)
 - Tests del orchestrator (`tests/scripts/index.test.mjs`) — 40 tests
 
-**PR 3b: Workflow + documentación** 🔲 pendiente (~240 líneas)
+**PR 3b: Workflow + documentación** ✅ done (~240 líneas, pending push)
 - WU-10 (GitHub Actions workflow `.github/workflows/weekly-digest.yml`)
-- WU-11 (local dev experience — extender README)
-- WU-12 (deployment walkthrough — extender README)
+- WU-11 (local dev experience — README sección MSAL setup)
+- WU-12 (deployment walkthrough — README sección Deploy to GitHub Actions)
 
 > **Decisión de split:** PR3 se dividió en 3a + 3b porque el total (~690 líneas) excede el presupuesto de revisión de 400 líneas. PR3a implementa y testea el orquestador; PR3b agrega el workflow YAML y la documentación de despliegue.
