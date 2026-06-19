@@ -1,0 +1,144 @@
+# Weekly Hotmail digest pipeline.
+#
+# Schedule: Monday 13:00 UTC = 08:00 COL (UTC-5).
+# Also supports manual dispatch with --dry-run for safe testing.
+#
+# Required secrets (see README.md for setup):
+#   HOTMAIL_ACCOUNT_ADDRESS
+#   MSAL_TOKEN_CACHE_JSON      (manual rotation; see README)
+#   GMAIL_OAUTH_CLIENT_ID
+#   GMAIL_OAUTH_CLIENT_SECRET
+#   GMAIL_OAUTH_REFRESH_TOKEN
+#   GMAIL_DESTINATION_ADDRESS
+
+name: Weekly Hotmail Digest
+
+on:
+  schedule:
+    # Monday 13:00 UTC. COL is UTC-5, so 13:00 UTC = 08:00 COL.
+    - cron: '0 13 * * 1'
+  workflow_dispatch:
+    inputs:
+      dryRun:
+        description: 'Run in dry-run mode (no send, no mark, no commit)'
+        type: boolean
+        required: false
+        default: false
+
+# Prevent two runs from happening at the same time. The pipeline
+# reads/writes state/reported-ids.json and the MSAL token cache;
+# concurrent runs could race on either.
+concurrency:
+  group: weekly-digest
+  cancel-in-progress: false
+
+# Default to read-only; explicitly grant contents:write for the
+# checkpoint commit step below.
+permissions:
+  contents: write
+
+jobs:
+  # Pre-flight check that all 6 required secrets are present before
+  # we waste cycles installing deps and starting the pipeline.
+  validate:
+    name: Validate secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check required secrets
+        env:
+          HOTMAIL_ACCOUNT_ADDRESS: ${{ secrets.HOTMAIL_ACCOUNT_ADDRESS }}
+          MSAL_TOKEN_CACHE_JSON: ${{ secrets.MSAL_TOKEN_CACHE_JSON }}
+          GMAIL_OAUTH_CLIENT_ID: ${{ secrets.GMAIL_OAUTH_CLIENT_ID }}
+          GMAIL_OAUTH_CLIENT_SECRET: ${{ secrets.GMAIL_OAUTH_CLIENT_SECRET }}
+          GMAIL_OAUTH_REFRESH_TOKEN: ${{ secrets.GMAIL_OAUTH_REFRESH_TOKEN }}
+          GMAIL_DESTINATION_ADDRESS: ${{ secrets.GMAIL_DESTINATION_ADDRESS }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for var in \
+            HOTMAIL_ACCOUNT_ADDRESS \
+            MSAL_TOKEN_CACHE_JSON \
+            GMAIL_OAUTH_CLIENT_ID \
+            GMAIL_OAUTH_CLIENT_SECRET \
+            GMAIL_OAUTH_REFRESH_TOKEN \
+            GMAIL_DESTINATION_ADDRESS; do
+            if [ -z "${!var:-}" ]; then
+              echo "::error::Missing required secret: $var"
+              missing=1
+            fi
+          done
+          if [ "$missing" -eq 1 ]; then
+            echo "::error::One or more required secrets are missing. See README.md for setup."
+            exit 1
+          fi
+          echo "All required secrets present."
+
+  digest:
+    name: Run digest pipeline
+    needs: validate
+    runs-on: ubuntu-latest
+    # Keep at least 5 minutes of logs around for post-mortem debugging.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run digest pipeline
+        env:
+          HOTMAIL_ACCOUNT_ADDRESS: ${{ secrets.HOTMAIL_ACCOUNT_ADDRESS }}
+          MSAL_TOKEN_CACHE_JSON: ${{ secrets.MSAL_TOKEN_CACHE_JSON }}
+          GMAIL_OAUTH_CLIENT_ID: ${{ secrets.GMAIL_OAUTH_CLIENT_ID }}
+          GMAIL_OAUTH_CLIENT_SECRET: ${{ secrets.GMAIL_OAUTH_CLIENT_SECRET }}
+          GMAIL_OAUTH_REFRESH_TOKEN: ${{ secrets.GMAIL_OAUTH_REFRESH_TOKEN }}
+          GMAIL_DESTINATION_ADDRESS: ${{ secrets.GMAIL_DESTINATION_ADDRESS }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_RUN_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          # When user dispatched with dryRun=true, pass --dry-run to the script.
+          DIGEST_ARGS: ${{ inputs.dryRun == true && '--dry-run' || '' }}
+        run: |
+          set -euo pipefail
+          # Output to GITHUB_STEP_SUMMARY so the run page shows the run URL.
+          echo "## Weekly Hotmail Digest — Run $GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Trigger: ${{ github.event_name }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Dry run: ${{ inputs.dryRun == true }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run URL: $GITHUB_RUN_URL" >> "$GITHUB_STEP_SUMMARY"
+          # Build the args array. node scripts/index.mjs takes --dry-run and --commit.
+          args=()
+          if [ "${{ inputs.dryRun }}" = "true" ]; then
+            args+=(--dry-run)
+          fi
+          args+=(--commit)
+          node scripts/index.mjs "${args[@]}"
+
+      - name: Commit checkpoint
+        # Only when the pipeline ran for real (no --dry-run) and produced
+        # an updated checkpoint. The script wrote state/reported-ids.json
+        # locally; we commit and push it here with [skip ci] to avoid
+        # triggering another workflow run.
+        if: hashFiles('state/reported-ids.json') != ''
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add state/reported-ids.json
+          git commit -m "chore(checkpoint): update reported-ids.json [skip ci]"
+          git push
+
+      # Note: MSAL token cache rotation is handled MANUALLY via
+      # `npx @softeria/ms-365-mcp-server --login` and `gh secret set`,
+      # not by the workflow. See README "Deploy to GitHub Actions" for
+      # the rotation procedure.
