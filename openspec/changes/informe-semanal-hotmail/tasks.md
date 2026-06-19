@@ -25,10 +25,11 @@ Pipeline de 14 pasos que consulta Microsoft Graph API por correos no leídos de 
 - Integración en `scripts/build-digest.mjs`
 - Tests actualizados (mock de `googleapis` agregado, 213 tests passing)
 
-### 🔲 PR 3a — Orquestador + tests (~450 líneas)
-**Pendiente:**
+### ✅ PR 3a — Orquestador + tests
+**Commits:** pendiente push a `origin/main`
 - WU-9: Orchestrator (`scripts/index.mjs`)
-- Tests del orchestrator (`tests/scripts/index.test.mjs`)
+- Tests del orchestrator (`tests/scripts/index.test.mjs`) — 40 tests
+- 253/253 tests passing (213 previos + 40 nuevos)
 
 ### 🔲 PR 3b — Workflow + documentación (~240 líneas)
 **Pendiente:**
@@ -249,7 +250,7 @@ Small (~60 líneas)
 
 ---
 
-## 9. Orquestador (entry point) 🔲 (PR3a)
+## 9. Orquestador (entry point) ✅ (PR3a)
 
 Implementar el script principal que orquesta los 14 pasos del pipeline.
 
@@ -257,14 +258,14 @@ Implementar el script principal que orquesta los 14 pasos del pipeline.
 - `scripts/index.mjs` — punto de entrada único que valida env, ejecuta pasos 1-14 con manejo de errores en cada etapa
 
 ### Acceptance
-- [ ] Valida que los 6 secretos existen como env vars al inicio (diseño paso 2)
-- [ ] Env exitoso + mark-read exitoso + checkpoint escrito: flujo completo exitoso (diseño pasos 9-14)
-- [ ] Fallo en adquisición: invoca error-report.mjs y sale non-zero sin efectos secundarios (diseño paso 5 fallo)
-- [ ] Fallo en mark-read parcial: IDs fallidos reportados, checkpoint no se actualiza (diseño paso 10 fallo parcial)
-- [ ] Fallo en commit: error-report se envía, checkpoint local actualizado pero no remoto (diseño paso 12 fallo)
-- [ ] Sin mensajes nuevos: exit 0 sin envío, sin mark-read, sin checkpoint (diseño paso 7)
-- [ ] Dry-run: reporte guardado en `.local/report-preview.html`, sin envío, sin mark-read, sin commit (escenario `local-development: Vista previa sin efectos secundarios`)
-- [ ] Ejecución local completa (`dev:once`): consulta Graph, envía por Gmail, marca como leídos, checkpoint local actualizado sin commit (escenario `local-development: Ejecución local completa`)
+- [x] Valida que los 6 secretos existen como env vars al inicio (diseño paso 2)
+- [x] Env exitoso + mark-read exitoso + checkpoint escrito: flujo completo exitoso (diseño pasos 9-14)
+- [x] Fallo en adquisición: error email enviado via gmail.mjs, sale non-zero sin efectos secundarios (diseño paso 5 fallo)
+- [x] Fallo en mark-read parcial: IDs fallidos reportados, checkpoint no se actualiza (diseño paso 10 fallo parcial)
+- [x] Fallo en commit: error-report se envía, checkpoint local actualizado pero no remoto (diseño paso 12 fallo)
+- [x] Sin mensajes nuevos: exit 0 sin envío, sin mark-read, sin checkpoint (diseño paso 7)
+- [x] Dry-run: reporte guardado en `.local/report-preview.html`, sin envío, sin mark-read, sin commit (escenario `local-development: Vista previa sin efectos secundarios`)
+- [x] Ejecución local completa (`dev:once`): consulta Graph, envía por Gmail, marca como leídos, checkpoint local actualizado sin commit (escenario `local-development: Ejecución local completa`)
 
 ### Dependencies
 WU-3, WU-4, WU-5, WU-6, WU-7, WU-8
@@ -357,7 +358,7 @@ Small (~50 líneas)
 | 12 | Guía de despliegue | Small | ~50 |
 | **Total** | | | **~1,370** |
 
-### Estado: PR1 ✅ mergeado | PR2 ✅ mergeado | PR3a 🔲 pendiente | PR3b 🔲 pendiente
+### Estado: PR1 ✅ mergeado | PR2 ✅ mergeado | PR3a ✅ done (pending push) | PR3b 🔲 pendiente
 
 El total estimado (~1,370 líneas) se dividió en 4 PRs encadenados:
 
@@ -376,9 +377,9 @@ El total estimado (~1,370 líneas) se dividió en 4 PRs encadenados:
 - pnpm migration
 - Archivos: `scripts/send-gmail.mjs`, `scripts/mark-read.mjs`, `scripts/checkpoint-commit.mjs`, `tests/scripts/*.test.mjs`, `.gitignore`, `pnpm-lock.yaml`
 
-**PR 3a: Orquestador + tests** 🔲 pendiente (~450 líneas)
+**PR 3a: Orquestador + tests** ✅ done (~450 líneas, pending push)
 - WU-9 (orchestrator `scripts/index.mjs`)
-- Tests del orchestrator (`tests/scripts/index.test.mjs`)
+- Tests del orchestrator (`tests/scripts/index.test.mjs`) — 40 tests
 
 **PR 3b: Workflow + documentación** 🔲 pendiente (~240 líneas)
 - WU-10 (GitHub Actions workflow `.github/workflows/weekly-digest.yml`)
