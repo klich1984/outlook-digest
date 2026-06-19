@@ -1,0 +1,18 @@
+# Force LF line endings for all source files to avoid vitest SyntaxError on CRLF
+*.mjs         eol=lf
+*.js          eol=lf
+*.json        eol=lf
+*.md          eol=lf
+*.yml         eol=lf
+*.yaml        eol=lf
+*.ts          eol=lf
+*.mts         eol=lf
+*.cts         eol=lf
+
+# Shell scripts need LF too
+*.sh          eol=lf
+
+# Windows-only files can keep CRLF
+*.bat         eol=crlf
+*.cmd         eol=crlf
+*.ps1         eol=crlf
