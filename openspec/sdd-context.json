@@ -1,0 +1,39 @@
+{
+  "project": "outlook-digest",
+  "path": "C:\\Users\\hetan\\Documents\\desarrollo\\opencode\\mcp",
+  "git_remote": "github.com/hetanol/outlook-digest",
+  "persistence": "openspec + engram",
+  "strict_tdd": true,
+  "test_runner": "pnpm test",
+  "framework": "vitest",
+  "coverage_command": "pnpm run test:coverage",
+  "scripts_count": 5,
+  "lib_count": 9,
+  "tests_count": 213,
+  "test_files_count": 9,
+  "detected": "2026-06-18",
+  "stack": {
+    "runtime": "Node.js >=20",
+    "package_manager": "pnpm",
+    "test_framework": "vitest 4.1.9",
+    "coverage": "@vitest/coverage-v8",
+    "dependencies": ["@azure/msal-node", "googleapis"]
+  },
+  "quality": {
+    "lint": false,
+    "type_check": false,
+    "format": false
+  },
+  "coverage_current": {
+    "statements": 89.26,
+    "branches": 81.72,
+    "functions": 92.39,
+    "lines": 91.64
+  },
+  "risks": [
+    "No .github/ workflows - GitHub Actions not yet configured",
+    "lib/ directory doesn't exist - code lives in scripts/lib/",
+    "Test isolation uses temp dirs with pid/timestamp",
+    "No MSAL token caching tests (uses in-memory cache)"
+  ]
+}
