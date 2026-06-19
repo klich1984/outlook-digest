@@ -47,6 +47,41 @@ npm run dev:once
 pnpm run dev:once
 ```
 
+## Initial MSAL token setup
+
+To read emails from Hotmail/Outlook.com the script needs a valid
+**MSAL token cache**. The cache is a JSON blob that MSAL produces
+after a human authenticates once with Microsoft.
+
+The cache is generated locally using the
+`@softeria/ms-365-mcp-server` binary (the same MCP server opencode
+uses):
+
+```bash
+# 1. Install the package (only the first time)
+npm install -g @softeria/ms-365-mcp-server
+# — or —
+pnpm add -g @softeria/ms-365-mcp-server
+
+# 2. Authenticate: a browser window opens, sign in with your
+#    Hotmail/Outlook.com account and the cache is printed to stdout
+npx @softeria/ms-365-mcp-server --login
+
+# 3. Copy the JSON that appears in stdout (a long object with
+#    "Account", "IdToken", "RefreshToken", etc. fields) and paste
+#    it as the value of MSAL_TOKEN_CACHE_JSON in your .env
+```
+
+**Important:** the token cache is NOT the same as an access token. It
+is a JSON blob containing the refresh tokens and metadata MSAL needs
+to silently renew access tokens. **Typical expiry:** ~1 hour for
+access tokens, ~90 days for refresh tokens.
+
+When the workflow fails with `GRAPH_AUTH_ERROR` or "refresh token
+rejected" errors, regenerate the cache with step 2 and update the
+secret in GitHub Actions
+(`gh secret set MSAL_TOKEN_CACHE_JSON < new-cache.json`).
+
 ## Project structure
 
 ```
@@ -76,3 +111,70 @@ pnpm run dev:once
   — complete architecture, MSAL token lifecycle, HTML templates, failure handling and operational considerations.
 - [`openspec/changes/informe-semanal-hotmail/specs/`](openspec/changes/informe-semanal-hotmail/specs/)
   — specifications by domain (graph-query, alerts, report, send, checkpoint, failure-handling, secrets, local-development).
+
+## Deploy to GitHub Actions
+
+The workflow runs automatically every Monday at 8:00 AM COL. To
+configure the 6 required secrets in your fork:
+
+### 1. Hotmail / Outlook.com
+
+| Variable | How to obtain |
+|---|---|
+| `HOTMAIL_ACCOUNT_ADDRESS` | Your Hotmail/Outlook.com address (e.g. `your-account@hotmail.com`) |
+| `MSAL_TOKEN_CACHE_JSON` | Paste the full JSON returned by `npx @softeria/ms-365-mcp-server --login` (see [Initial MSAL token setup](#initial-msal-token-setup)) |
+
+### 2. Gmail (OAuth2 Desktop application)
+
+| Variable | How to obtain |
+|---|---|
+| `GMAIL_OAUTH_CLIENT_ID` | Google Cloud Console → APIs & Services → Credentials → your OAuth 2.0 Client ID of type "Desktop app" |
+| `GMAIL_OAUTH_CLIENT_SECRET` | The Client Secret corresponding to the Client ID above |
+| `GMAIL_OAUTH_REFRESH_TOKEN` | OAuth2 flow with scope `https://www.googleapis.com/auth/gmail.send` and `access_type=offline`. Use the Google "OAuth 2.0 Playground" or a local script that performs the flow and captures the refresh_token |
+| `GMAIL_DESTINATION_ADDRESS` | The Gmail address where you want to receive the report (can be the same one that authorized the app, or any other that has permission) |
+
+### 3. Configure secrets with the `gh` CLI
+
+```bash
+# Replace the <...> placeholders with your real values.
+# For MSAL_TOKEN_CACHE_JSON, pass the JSON as a file:
+
+# Save the token cache to a temporary file
+npx @softeria/ms-365-mcp-server --login > /tmp/msal-cache.json
+
+# Configure each secret
+gh secret set HOTMAIL_ACCOUNT_ADDRESS --body "your-account@hotmail.com"
+gh secret set MSAL_TOKEN_CACHE_JSON < /tmp/msal-cache.json
+gh secret set GMAIL_OAUTH_CLIENT_ID --body "<your-client-id>"
+gh secret set GMAIL_OAUTH_CLIENT_SECRET --body "<your-client-secret>"
+gh secret set GMAIL_OAUTH_REFRESH_TOKEN --body "<your-refresh-token>"
+gh secret set GMAIL_DESTINATION_ADDRESS --body "destination@gmail.com"
+
+# Verify they are all set
+gh secret list
+```
+
+### 4. Activate the workflow
+
+The workflow lives in `.github/workflows/weekly-digest.yml`. It runs
+automatically every Monday at 13:00 UTC (8 AM COL). You can also
+trigger it manually from the repo's "Actions" tab with "Run workflow"
+→ check the **dry run** box to test without sending real emails.
+
+### 5. Manual MSAL token rotation
+
+The MSAL refresh token expires ~90 days after the last interactive
+login. When the workflow fails with `GRAPH_AUTH_ERROR`:
+
+```bash
+# 1. Regenerate the cache locally
+npx @softeria/ms-365-mcp-server --login > /tmp/msal-cache.json
+
+# 2. Update the secret
+gh secret set MSAL_TOKEN_CACHE_JSON < /tmp/msal-cache.json
+
+# 3. Re-trigger the workflow manually from the Actions tab
+```
+
+**Total setup time for a new repo:** ~30 minutes following this guide
+(assuming you already have your Hotmail and Gmail accounts ready).
