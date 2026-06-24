@@ -387,3 +387,96 @@ El total estimado (~1,370 líneas) se dividió en 4 PRs encadenados:
 - WU-12 (deployment walkthrough — README sección Deploy to GitHub Actions)
 
 > **Decisión de split:** PR3 se dividió en 3a + 3b porque el total (~690 líneas) excede el presupuesto de revisión de 400 líneas. PR3a implementa y testea el orquestador; PR3b agrega el workflow YAML y la documentación de despliegue.
+
+---
+
+## Tareas futuras (post-lanzamiento)
+
+Estas tareas surgieron durante el setup y primer run del workflow. No son parte del change actual pero deben abordarse en futuras iteraciones.
+
+### TF-1: Cleanup de Google Cloud Console
+
+**Tarea:** Borrar la primera aplicación de Google Cloud Console que se creó durante el setup inicial (la del Client ID `1071767063912-tn3n45ph58ijcro4rpvi6321tkj0ohro`) porque ya no se usa.
+
+**Pasos:**
+1. Ir a https://console.cloud.google.com/
+2. Seleccionar el proyecto que contiene la app no usada
+3. APIs & Services → Credentials
+4. Identificar el OAuth 2.0 Client ID a borrar (verificar con el ID arriba)
+5. Click en la credencial → Delete
+6. (Opcional) Si el proyecto entero no se va a usar más, también se puede borrar el proyecto
+
+**Riesgo:** bajo, siempre y cuando no haya otros sistemas usando ese Client ID.
+
+---
+
+### TF-2: Migrar workflow de Node 20 a Node 22 (o 24)
+
+**Tarea:** Resolver el warning de Node.js 20 deprecated en GitHub Actions. GitHub está forzando a los workflows a correr en Node 24 por default porque Node 20 será deprecated.
+
+**Warning actual:**
+```
+Warning: Node.js 20 is deprecated. The following actions target Node.js 20
+but are being forced to run on Node 24: actions/checkout@v4, actions/setup-node@v4.
+```
+
+**Cambio requerido:** editar `.github/workflows/weekly-digest.yml` línea donde dice `node-version: '20'` y cambiarlo a `'22'` (LTS actual) o `'24'` (latest).
+
+**Dificultad:** trivial — un solo cambio de string en el workflow YAML.
+
+**Consecuencias de NO arreglarlo:**
+- GitHub va a empezar a tirar errores en vez de warnings cuando Node 20 se retire completamente
+- Las actions de terceros (actions/checkout, setup-node) ya están siendo forzadas a Node 24, así que técnicamente ya funciona
+- Si los dependencies del proyecto (ej. `@azure/msal-node`, `googleapis`) requieren Node 20 específicamente, podría haber incompatibilidades futuras
+- Por ahora: el warning es cosmético y no rompe nada
+
+**Recomendación:** migrar a Node 22 (LTS) en el próximo PR pequeño. Verificar que `@azure/msal-node` 3.5+ y `googleapis` 144+ soporten Node 22 (deberían porque es LTS desde octubre 2022).
+
+---
+
+### TF-3: Forward de correos de Gmail secundario a Gmail principal
+
+**Tarea:** Reenviar los correos que llegan a `cusuga004@gmail.com` (la cuenta nueva creada para evitar APP) a la cuenta principal `carlosusugamartinez@gmail.com` (que tiene APP activado).
+
+**Problema:** La cuenta principal tiene Google Advanced Protection Program activado, lo que bloquea apps no verificadas. Por eso creamos la cuenta secundaria como destino del reporte. Pero queremos leer el reporte desde la cuenta principal.
+
+**Opciones:**
+
+**A) Forward automático desde Gmail (más simple)**
+1. Abrir sesión en `cusuga004@gmail.com`
+2. Settings (⚙️) → "See all settings" → "Forwarding and POP/IMAP"
+3. Click "Add a forwarding address"
+4. Ingresar `carlosusugamartinez@gmail.com`
+5. Gmail envía un código de confirmación a la cuenta principal
+6. Confirmar el código (esto puede fallar si APP bloquea el link de confirmación)
+7. Elegir qué hacer con los correos reenviados: "keep Gmail's copy in the inbox" o "mark as read and archive"
+8. Opcional: crear filter para forwardear SOLO correos con subject "Reporte semanal Hotmail"
+
+**B) Polling con el Gmail API (más robusto)**
+Modificar el script para que después de enviar el reporte, también lo reenvíe a la cuenta principal usando el `users.messages.forward` endpoint de Gmail API.
+
+**C) Usar la cuenta secundaria permanentemente como inbox del reporte**
+Renunciar a la integración con la cuenta principal y usar `cusuga004@gmail.com` como inbox designada para el reporte semanal.
+
+**Recomendación:** A) por simplicidad. Si el link de confirmación falla por APP, probar C) como fallback.
+
+---
+
+### TF-4 (V2): Investigar uso de Gmail API via MCP
+
+**Tarea:** Investigar si se puede usar el "MCP Gmail API" (https://developers.google.com/workspace/gmail/api/reference/mcp?hl=es_419) para evitar el OAuth2 flow tradicional y así poder usar la cuenta principal con APP activado.
+
+**Contexto:** Google ofrece un MCP (Model Context Protocol) server oficial para Gmail API. Si este MCP permite acceso a la API sin pasar por el OAuth consent screen tradicional, podríamos bypassear el bloqueo de APP.
+
+**Rama:** crear rama secundaria `feat/mcp-gmail-api` para investigación. NO desarrollar en main hasta validar que el approach funciona.
+
+**Pasos:**
+1. Revisar la documentación oficial en https://developers.google.com/workspace/gmail/api/reference/mcp
+2. Evaluar si el MCP server es compatible con la API actual (gmail.send scope)
+3. Si es viable: diseñar V2 de la app que use el MCP server en vez de googleapis
+4. Si NO es viable: documentar el hallazgo y cerrar TF-4 como "no aplicable"
+5. Probar específicamente con `carlosusugamartinez@gmail.com` (la cuenta con APP) para validar que el MCP bypass funciona
+
+**Criterio de éxito:** poder enviar el reporte semanal a la cuenta principal usando el MCP server, sin necesidad de cuenta Gmail secundaria.
+
+**Estimación:** 1-2 días de investigación + posible implementación nueva.
