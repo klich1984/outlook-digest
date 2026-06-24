@@ -102,6 +102,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Configure git identity
+        # Required before any git commit (including the one the orchestrator
+        # does internally when it commits the checkpoint). Without this,
+        # git fails with "Please tell me who you are".
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Run digest pipeline
         env:
           HOTMAIL_ACCOUNT_ADDRESS: ${{ secrets.HOTMAIL_ACCOUNT_ADDRESS }}
