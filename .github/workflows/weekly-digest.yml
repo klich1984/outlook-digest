@@ -5,6 +5,7 @@
 #
 # Required secrets (see README.md for setup):
 #   HOTMAIL_ACCOUNT_ADDRESS
+#   MSAL_CLIENT_ID             (Azure App Registration client ID)
 #   MSAL_TOKEN_CACHE_JSON      (manual rotation; see README)
 #   GMAIL_OAUTH_CLIENT_ID
 #   GMAIL_OAUTH_CLIENT_SECRET
@@ -47,6 +48,7 @@ jobs:
       - name: Check required secrets
         env:
           HOTMAIL_ACCOUNT_ADDRESS: ${{ secrets.HOTMAIL_ACCOUNT_ADDRESS }}
+          MSAL_CLIENT_ID: ${{ secrets.MSAL_CLIENT_ID }}
           MSAL_TOKEN_CACHE_JSON: ${{ secrets.MSAL_TOKEN_CACHE_JSON }}
           GMAIL_OAUTH_CLIENT_ID: ${{ secrets.GMAIL_OAUTH_CLIENT_ID }}
           GMAIL_OAUTH_CLIENT_SECRET: ${{ secrets.GMAIL_OAUTH_CLIENT_SECRET }}
@@ -57,6 +59,7 @@ jobs:
           missing=0
           for var in \
             HOTMAIL_ACCOUNT_ADDRESS \
+            MSAL_CLIENT_ID \
             MSAL_TOKEN_CACHE_JSON \
             GMAIL_OAUTH_CLIENT_ID \
             GMAIL_OAUTH_CLIENT_SECRET \
@@ -102,6 +105,7 @@ jobs:
       - name: Run digest pipeline
         env:
           HOTMAIL_ACCOUNT_ADDRESS: ${{ secrets.HOTMAIL_ACCOUNT_ADDRESS }}
+          MSAL_CLIENT_ID: ${{ secrets.MSAL_CLIENT_ID }}
           MSAL_TOKEN_CACHE_JSON: ${{ secrets.MSAL_TOKEN_CACHE_JSON }}
           GMAIL_OAUTH_CLIENT_ID: ${{ secrets.GMAIL_OAUTH_CLIENT_ID }}
           GMAIL_OAUTH_CLIENT_SECRET: ${{ secrets.GMAIL_OAUTH_CLIENT_SECRET }}
