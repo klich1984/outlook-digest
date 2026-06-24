@@ -60,6 +60,7 @@ const execFileAsync = promisify(execFileCb)
 
 export const REQUIRED_ENV = Object.freeze([
   'HOTMAIL_ACCOUNT_ADDRESS',
+  'MSAL_CLIENT_ID',
   'MSAL_TOKEN_CACHE_JSON',
   'GMAIL_OAUTH_CLIENT_ID',
   'GMAIL_OAUTH_CLIENT_SECRET',
@@ -109,6 +110,7 @@ export function validateEnv(env = process.env) {
   }
   return {
     hotmailAddress: env.HOTMAIL_ACCOUNT_ADDRESS,
+    msalClientId: env.MSAL_CLIENT_ID,
     msalTokenCacheJson: env.MSAL_TOKEN_CACHE_JSON,
     gmailClientId: env.GMAIL_OAUTH_CLIENT_ID,
     gmailClientSecret: env.GMAIL_OAUTH_CLIENT_SECRET,
@@ -260,7 +262,10 @@ export async function runPipeline(opts = {}) {
   try {
     config = validateEnv(env)
   } catch (err) {
-    log.error('Validación de entorno falló', { stage: err.stage || 'config' })
+    log.error('Validación de entorno falló', {
+      stage: err.stage || 'config',
+      message: err.message || String(err),
+    })
     await trySendErrorEmail({
       err,
       runId: 'unknown',
@@ -293,11 +298,18 @@ export async function runPipeline(opts = {}) {
   }
 
   // Steps 1-11 of the design live inside buildDigest.
+  // Fall back to the real buildDigest when called from the CLI; tests
+  // inject a mock via opts.buildDigestImpl.
+  const buildDigestFn = opts.buildDigestImpl || buildDigest;
   let result
   try {
-    result = await opts.buildDigestImpl(buildOpts)
+    result = await buildDigestFn(buildOpts)
   } catch (err) {
-    log.error('Pipeline falló', { stage: err.stage || 'unknown' })
+    log.error('Pipeline falló', {
+      stage: err.stage || 'unknown',
+      message: err.message || String(err),
+      stack: err.stack ? String(err.stack).split('\n').slice(0, 5).join('\n') : '',
+    })
     await trySendErrorEmail({
       err,
       runId: 'unknown',

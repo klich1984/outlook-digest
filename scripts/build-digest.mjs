@@ -185,7 +185,10 @@ export async function buildDigest(opts = {}) {
   log.info('Checkpoint leído', { reportedCount: reported.size });
 
   // Step 3 — MSAL token (used for the Graph call below).
-  const app = await loadMsal({ cacheJson: config.msalTokenCacheJson });
+  const app = await loadMsal({
+    cacheJson: config.msalTokenCacheJson,
+    clientId: config.msalClientId,
+  });
   let accessToken;
   try {
     const result = await acquireTokenSilent(app);

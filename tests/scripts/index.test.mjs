@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const VALID_ENV = Object.freeze({
   HOTMAIL_ACCOUNT_ADDRESS: 'test@outlook.com',
+  MSAL_CLIENT_ID: 'test-msal-cid',
   MSAL_TOKEN_CACHE_JSON: '{}',
   GMAIL_OAUTH_CLIENT_ID: 'test-cid',
   GMAIL_OAUTH_CLIENT_SECRET: 'test-csec',
@@ -129,11 +130,12 @@ describe('parseArgs', () => {
 })
 
 describe('validateEnv', () => {
-  it('returns the config object when all 6 env vars are present', async () => {
+  it('returns the config object when all 7 env vars are present', async () => {
     const { validateEnv } = await import('../../scripts/index.mjs')
     const config = validateEnv(VALID_ENV)
     expect(config).toEqual({
       hotmailAddress: 'test@outlook.com',
+      msalClientId: 'test-msal-cid',
       msalTokenCacheJson: '{}',
       gmailClientId: 'test-cid',
       gmailClientSecret: 'test-csec',
@@ -640,6 +642,7 @@ describe('runPipeline — dev:once local complete (AC: Graph + Gmail + mark + ch
     const buildOpts = buildDigestImpl.mock.calls[0][0]
     expect(buildOpts.config).toEqual({
       hotmailAddress: VALID_ENV.HOTMAIL_ACCOUNT_ADDRESS,
+      msalClientId: VALID_ENV.MSAL_CLIENT_ID,
       msalTokenCacheJson: VALID_ENV.MSAL_TOKEN_CACHE_JSON,
       gmailClientId: VALID_ENV.GMAIL_OAUTH_CLIENT_ID,
       gmailClientSecret: VALID_ENV.GMAIL_OAUTH_CLIENT_SECRET,
