@@ -139,20 +139,9 @@ jobs:
           fi
           args+=(--commit)
           node scripts/index.mjs "${args[@]}"
-
-      - name: Commit checkpoint
-        # Only when the pipeline ran for real (no --dry-run) and produced
-        # an updated checkpoint. The script wrote state/reported-ids.json
-        # locally; we commit and push it here with [skip ci] to avoid
-        # triggering another workflow run.
-        if: hashFiles('state/reported-ids.json') != ''
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add state/reported-ids.json
-          git commit -m "chore(checkpoint): update reported-ids.json [skip ci]"
-          git push
+        # The orchestrator commits and pushes state/reported-ids.json
+        # internally when --commit is passed (via scripts/checkpoint-commit.mjs).
+        # No separate "Commit checkpoint" step is needed here.
 
       # Note: MSAL token cache rotation is handled MANUALLY via
       # `npx @softeria/ms-365-mcp-server --login` and `gh secret set`,
