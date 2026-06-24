@@ -331,13 +331,17 @@ export async function runPipeline(opts = {}) {
 
   // Dry-run: write the rendered report to disk for visual inspection.
   // No send / no mark / no commit. Exit 0.
+  // Fall back to the real fs functions when called from the CLI; tests
+  // inject mocks via opts.mkdirImpl / opts.writeFileImpl.
+  const mkdirFn = opts.mkdirImpl || mkdir;
+  const writeFileFn = opts.writeFileImpl || writeFile;
   if (args.dryRun) {
     if (result.report && result.report.html) {
       const absolutePreview = path.isAbsolute(previewPath)
         ? previewPath
         : path.join(cwd, previewPath)
-      await opts.mkdirImpl(path.dirname(absolutePreview), { recursive: true })
-      await opts.writeFileImpl(absolutePreview, result.report.html, 'utf8')
+      await mkdirFn(path.dirname(absolutePreview), { recursive: true })
+      await writeFileFn(absolutePreview, result.report.html, 'utf8')
       log.info('Dry-run completo; vista previa escrita', { path: absolutePreview })
     } else {
       log.info('Dry-run completo; sin reporte para previsualizar', {
