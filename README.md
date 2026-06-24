@@ -197,3 +197,120 @@ gh secret set MSAL_TOKEN_CACHE_JSON < /tmp/msal-cache.json
 
 **Tiempo total de setup en repo nuevo:** ~30 minutos siguiendo esta
 guía (asumiendo que ya tenés cuenta de Hotmail y Gmail listas).
+
+## Troubleshooting
+
+Esta sección cubre los errores más comunes que aparecieron durante el
+desarrollo y primer deploy. Si tu workflow falla, revisá acá antes de
+abrir un issue.
+
+### Error: `SyntaxError: Invalid or unexpected token` en los tests
+
+**Causa:** archivos `.mjs` con CRLF (Windows line endings). Vitest no
+tolera `\r\n` en ciertos contextos donde Node.js sí.
+
+**Solución:**
+
+```bash
+# Convertir el archivo específico
+sed -i 's/\r$//' scripts/index.mjs
+```
+
+**Prevención:** el repo incluye `.gitattributes` que fuerza LF para
+todos los `.mjs`, `.js`, `.json`, `.md`. Si VS Code sigue abriendo
+archivos en CRLF, agregá `"files.eol": "\n"` en tus User Settings
+(`Ctrl+Shift+P` → "Preferences: Open User Settings (JSON)").
+
+### Error: `unauthorized_client: The client does not exist or is not enabled for consumers` (Azure)
+
+**Causa:** Azure App Registration fue creado con "Accounts in this
+organizational directory only" en vez de "Personal Microsoft accounts
+only". Las cuentas MSA (Hotmail/Outlook.com) NO funcionan con apps
+single-tenant organizacionales.
+
+**Solución:** borrar el app y crear uno nuevo con la opción correcta.
+"Supported account types" **no se puede cambiar** después de crear.
+
+### Error: `400: policy_enforced` al autorizar con Google
+
+**Causa:** tu cuenta Gmail tiene activado el **Programa de Protección
+Avanzada** (APP) de Google. APP bloquea TODAS las apps no verificadas
+formalmente por Google, sin importar si están en modo "Testing".
+
+**Solución:** usar otra cuenta Gmail que NO tenga APP. Para verificar
+si tu cuenta tiene APP: https://myaccount.google.com/advancedprotection
+
+### Error: `403: access_denied` al autorizar con Google
+
+**Causa:** falta agregar tu email como **test user** en el OAuth
+consent screen de Google Cloud Console.
+
+**Solución:** Google Cloud Console → APIs & Services → OAuth consent
+screen → Test users → + ADD USERS → agregar tu email.
+
+### Error: `Unable to locate executable file: pnpm` en GitHub Actions
+
+**Causa:** incompatibilidad entre `pnpm/action-setup@v4` y
+`actions/setup-node@v4` con `cache: 'pnpm'` en Node 20+.
+
+**Solución:** ya está arreglado en este repo usando **corepack** (que
+viene con Node 20+). Si querés usar otro approach, el workflow YAML
+tiene comentarios explicativos.
+
+### Error: `Please tell me who you are` durante git commit en workflow
+
+**Causa:** los runners de GitHub Actions NO tienen `user.name` /
+`user.email` configurados por default.
+
+**Solución:** ya está arreglado en este repo con un step "Configure
+git identity" que corre antes del pipeline.
+
+### Error: `Nothing to commit, working tree clean` en workflow
+
+**Causa:** el orchestrator (con `--commit`) ya commiteó el checkpoint
+internamente. El step "Commit checkpoint" del workflow es redundante.
+
+**Solución:** ya está arreglado en este repo — el step redundante fue
+eliminado.
+
+### Warning: Node.js 20 deprecated en logs del workflow
+
+**Causa:** GitHub está forzando runners a Node 24 porque Node 20 será
+deprecated.
+
+**Workaround temporal:** seguir usando Node 20 (funciona, solo tira
+warning).
+
+**Solución permanente:** migrar el workflow a Node 22 (LTS) o Node 24.
+Cambio trivial: editar `.github/workflows/weekly-digest.yml` y cambiar
+`node-version: '20'` por `node-version: '22'`. Ver TF-2 en
+`openspec/changes/informe-semanal-hotmail/tasks.md`.
+
+## Forward de correos a cuenta principal
+
+Si tuviste que crear una cuenta Gmail secundaria (por APP) y querés
+recibir el reporte en tu cuenta principal:
+
+1. Login en `cusuga004@gmail.com`
+2. Settings (⚙️) → "See all settings" → "Forwarding and POP/IMAP"
+3. Click "Add a forwarding address" → ingresar tu cuenta principal
+4. Gmail envía código de confirmación — revisá tu bandeja de la cuenta
+   principal
+5. Si APP bloquea el link de confirmación, NO podés forwardear
+   (ver TF-3 en tasks.md)
+6. Si la confirmación funciona, elegí "keep Gmail's copy" o "mark as
+   read and archive"
+
+## Secrets y archivos sensibles
+
+**NUNCA** commitees al repo:
+
+- `client_secret_*.json` — descargados de Google Cloud Console
+- `msal-cache.json` — output de scripts/get-msal-token-cache.mjs
+- Tu `.env` local
+- Cualquier output de los scripts de setup
+
+El `.gitignore` ya excluye la mayoría de estos patrones. Si accidentalmente
+commiteás uno, **rotá el secret inmediatamente** (regenerá el cache o
+borrá la credencial en Google Cloud) — un secret en git history es
+considerado comprometido aunque lo borres después.
