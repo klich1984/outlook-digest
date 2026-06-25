@@ -394,7 +394,7 @@ El total estimado (~1,370 líneas) se dividió en 4 PRs encadenados:
 
 Estas tareas surgieron durante el setup y primer run del workflow. No son parte del change actual pero deben abordarse en futuras iteraciones.
 
-### TF-1: Cleanup de Google Cloud Console
+### TF-1: Cleanup de Google Cloud Console ✅ COMPLETADA
 
 **Tarea:** Borrar la primera aplicación de Google Cloud Console que se creó durante el setup inicial (la del Client ID `1071767063912-tn3n45ph58ijcro4rpvi6321tkj0ohro`) porque ya no se usa.
 
@@ -407,6 +407,11 @@ Estas tareas surgieron durante el setup y primer run del workflow. No son parte 
 6. (Opcional) Si el proyecto entero no se va a usar más, también se puede borrar el proyecto
 
 **Riesgo:** bajo, siempre y cuando no haya otros sistemas usando ese Client ID.
+
+**Resolución aplicada:**
+- Credencial OAuth 2.0 Client ID `1071767063912-tn3n45ph58ijcro4rpvi6321tkj0ohro` borrada de Google Cloud Console
+- El secret `GMAIL_OAUTH_CLIENT_ID` en GitHub Actions sigue apuntando al Client ID nuevo (`371674345711-...`) que es el que funciona
+- No se borró el proyecto entero — puede contener otras APIs/recursos útiles en el futuro
 
 ---
 
