@@ -30,7 +30,7 @@ los logs de GitHub Actions quedan disponibles para diagnóstico.
 
 ## Prerrequisitos
 
-- **Node.js 20 o superior** (probado con Node 24).
+- **Node.js 22 o superior** (probado con Node 24).
 - **Una cuenta de GitHub** con permisos para crear Actions workflows y
   secrets en el repositorio destino.
 - **Una cuenta personal de Hotmail / Outlook.com** (MSA). El script usa el
@@ -278,13 +278,12 @@ eliminado.
 **Causa:** GitHub está forzando runners a Node 24 porque Node 20 será
 deprecated.
 
-**Workaround temporal:** seguir usando Node 20 (funciona, solo tira
-warning).
+**Solución aplicada:** el workflow usa Node 22 (LTS) desde este PR. Si
+ves este warning, es porque estás en una versión vieja del workflow —
+actualizá a la última versión de `main`.
 
-**Solución permanente:** migrar el workflow a Node 22 (LTS) o Node 24.
-Cambio trivial: editar `.github/workflows/weekly-digest.yml` y cambiar
-`node-version: '20'` por `node-version: '22'`. Ver TF-2 en
-`openspec/changes/informe-semanal-hotmail/tasks.md`.
+**TF-2 completada.** Ver `openspec/changes/informe-semanal-hotmail/tasks.md`
+para el detalle de la migración.
 
 ## Forward de correos a cuenta principal
 

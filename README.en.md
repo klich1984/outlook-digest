@@ -18,7 +18,7 @@ If something fails, the system sends an error email to the same destination Gmai
 
 ## Prerequisites
 
-- **Node.js 20 or higher** (tested with Node 24).
+- **Node.js 22 or higher** (tested with Node 24).
 - **A GitHub account** with permissions to create Actions workflows and secrets on the target repository.
 - **A personal Hotmail / Outlook.com account** (MSA). The script uses the `consumers` tenant of Microsoft Graph.
 - **A Gmail account** to receive the report. You need a project in Google Cloud Console with Gmail API enabled and OAuth2 credentials of type "Desktop application" (Client ID, Client Secret, Refresh Token with scope `gmail.send` and `access_type=offline`).
@@ -262,13 +262,12 @@ removed.
 **Cause:** GitHub is forcing runners to Node 24 because Node 20 will be
 deprecated.
 
-**Temporary workaround:** keep using Node 20 (works, only emits a
-warning).
+**Solution applied:** the workflow uses Node 22 (LTS) since this PR.
+If you still see this warning, you are on an older version of the
+workflow — update to the latest `main`.
 
-**Permanent solution:** migrate the workflow to Node 22 (LTS) or
-Node 24. Trivial change: edit `.github/workflows/weekly-digest.yml`
-and change `node-version: '20'` to `node-version: '22'`. See TF-2 in
-`openspec/changes/informe-semanal-hotmail/tasks.md`.
+**TF-2 completed.** See `openspec/changes/informe-semanal-hotmail/tasks.md`
+for migration details.
 
 ## Forwarding emails to your main account
 
