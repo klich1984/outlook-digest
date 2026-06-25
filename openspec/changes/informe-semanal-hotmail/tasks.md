@@ -445,7 +445,7 @@ but are being forced to run on Node 24: actions/checkout@v4, actions/setup-node@
 
 ---
 
-### TF-3: Forward de correos de Gmail secundario a Gmail principal
+### TF-3: Forward de correos de Gmail secundario a Gmail principal ✅ COMPLETADA
 
 **Tarea:** Reenviar los correos que llegan a `cusuga004@gmail.com` (la cuenta nueva creada para evitar APP) a la cuenta principal `carlosusugamartinez@gmail.com` (que tiene APP activado).
 
@@ -470,6 +470,12 @@ Modificar el script para que después de enviar el reporte, también lo reenvíe
 Renunciar a la integración con la cuenta principal y usar `cusuga004@gmail.com` como inbox designada para el reporte semanal.
 
 **Recomendación:** A) por simplicidad. Si el link de confirmación falla por APP, probar C) como fallback.
+
+**Resolución aplicada:**
+- Forward configurado desde `cusuga004@gmail.com` → `carlosusugamartinez@gmail.com`
+- Opción "keep Gmail's copy in the inbox" seleccionada
+- Confirmación funcionó — APP NO bloqueó el link de confirmación (sorpresa positiva)
+- El reporte semanal ahora llega a ambas cuentas sin código adicional
 
 ---
 
