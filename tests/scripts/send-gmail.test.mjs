@@ -92,7 +92,7 @@ describe('sendMail — permanent failure', () => {
     const transient = Object.assign(new Error('Internal Server Error'), { code: 500 });
     const { sendMail } = await import('../../scripts/send-gmail.mjs');
     const { GmailError } = await import('../../scripts/lib/errors.mjs');
-    const client = makeMockClient([transient, transient]);
+    const client = makeMockClient([transient, transient, transient, transient]);
     let caught;
     try {
       await sendMail(client, validOpts());
@@ -101,7 +101,7 @@ describe('sendMail — permanent failure', () => {
     }
     expect(caught).toBeInstanceOf(GmailError);
     expect(caught.stage).toBe('gmail-send');
-    expect(client.users.messages.send).toHaveBeenCalledTimes(2);
+    expect(client.users.messages.send).toHaveBeenCalledTimes(4);
   });
 
   it('throws GmailError with stage="gmail-auth" on 401 and does NOT retry', async () => {

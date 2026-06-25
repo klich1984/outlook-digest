@@ -15,12 +15,26 @@ import { google } from 'googleapis';
 import { GmailError, ConfigError } from './errors.mjs';
 
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+// Network-level error codes that indicate the connection was dropped
+// mid-response, which is transient on GitHub Actions runners due to
+// shared IP rate-limiting from Google. See:
+// https://github.com/nodejs/undici/blob/main/docs/api/Errors.md
+const RETRYABLE_NETWORK_CODES = new Set([
+  'ECONNRESET',
+  'ETIMEDOUT',
+  'ECONNREFUSED',
+  'EPIPE',
+  'EAI_AGAIN',
+  'ENOTFOUND',
+  'UND_ERR_SOCKET',
+  'ERR_STREAM_PREMATURE_CLOSE',
+]);
 // Default exponential backoff between retries (ms). Exposed as an array
 // so callers (mainly tests) can override it for fast feedback loops.
-const DEFAULT_BACKOFF_MS = Object.freeze([2000, 8000]);
+const DEFAULT_BACKOFF_MS = Object.freeze([2000, 8000, 20000]);
 // Default = 1 retry = 2 total attempts (initial + 1 retry). The spec
 // states transient errors get retried once before giving up.
-const DEFAULT_RETRY_COUNT = 1;
+const DEFAULT_RETRY_COUNT = 3;
 
 function requireCreds({ clientId, clientSecret, refreshToken }) {
   const missing = [];
@@ -156,8 +170,8 @@ export async function sendMail(
       const transient =
         (typeof status === 'number' && RETRYABLE_STATUS.has(status)) ||
         err?.name === 'NetworkError' ||
-        err?.code === 'ECONNRESET' ||
-        err?.code === 'ETIMEDOUT';
+        RETRYABLE_NETWORK_CODES.has(err?.code) ||
+        RETRYABLE_NETWORK_CODES.has(err?.cause?.code);
 
       if (!transient || attempt >= maxAttempts) {
         throw new GmailError(
