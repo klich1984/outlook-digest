@@ -479,7 +479,7 @@ Renunciar a la integración con la cuenta principal y usar `cusuga004@gmail.com`
 
 ---
 
-### TF-4 (V2): Investigar uso de Gmail API via MCP
+### TF-4 (V2): Investigar uso de Gmail API via MCP ❌ NO VIABLE — cerrado
 
 **Tarea:** Investigar si se puede usar el "MCP Gmail API" (https://developers.google.com/workspace/gmail/api/reference/mcp?hl=es_419) para evitar el OAuth2 flow tradicional y así poder usar la cuenta principal con APP activado.
 
@@ -497,3 +497,15 @@ Renunciar a la integración con la cuenta principal y usar `cusuga004@gmail.com`
 **Criterio de éxito:** poder enviar el reporte semanal a la cuenta principal usando el MCP server, sin necesidad de cuenta Gmail secundaria.
 
 **Estimación:** 1-2 días de investigación + posible implementación nueva.
+
+**Resolución — TF-4 cerrado como no viable:**
+- Investigación completa en `tf4-investigation.md` (en este mismo directorio)
+- **No hay herramienta `send_message` en el MCP de Gmail** — solo lectura y organización
+- El MCP usa OAuth2 tradicional, NO bypassea APP
+- TF-3 (forward de Gmail) es la solución adoptada y funciona
+- Decisión: cerrar TF-4, no continuar con Apps Script ni servicios terceros (el forward es suficiente)
+
+**Próximas alternativas posibles (no implementadas, baja prioridad):**
+- Apps Script como proxy (corre en infra de Google, bypassea APP)
+- Servicios de email de terceros (SendGrid, Mailgun, etc.)
+- Mantener forward (ya implementado, funciona)
