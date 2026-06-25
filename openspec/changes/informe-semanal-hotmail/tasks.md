@@ -410,7 +410,7 @@ Estas tareas surgieron durante el setup y primer run del workflow. No son parte 
 
 ---
 
-### TF-2: Migrar workflow de Node 20 a Node 22 (o 24)
+### TF-2: Migrar workflow de Node 20 a Node 22 (o 24) ✅ COMPLETADA
 
 **Tarea:** Resolver el warning de Node.js 20 deprecated en GitHub Actions. GitHub está forzando a los workflows a correr en Node 24 por default porque Node 20 será deprecated.
 
@@ -431,6 +431,12 @@ but are being forced to run on Node 24: actions/checkout@v4, actions/setup-node@
 - Por ahora: el warning es cosmético y no rompe nada
 
 **Recomendación:** migrar a Node 22 (LTS) en el próximo PR pequeño. Verificar que `@azure/msal-node` 3.5+ y `googleapis` 144+ soporten Node 22 (deberían porque es LTS desde octubre 2022).
+
+**Resolución aplicada:**
+- Cambiado `node-version: '20'` → `node-version: '22'` en `.github/workflows/weekly-digest.yml`
+- Actualizado `engines.node` en `package.json` a `>=22`
+- Actualizada la mención en README (ambos idiomas) de "Node 20" a "Node 22"
+- `@azure/msal-node` 3.5+ y `googleapis` 144+ ambos soportan Node 22 LTS sin issues
 
 ---
 
