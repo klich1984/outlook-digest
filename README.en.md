@@ -115,23 +115,128 @@ secret in GitHub Actions
 ## Deploy to GitHub Actions
 
 The workflow runs automatically every Monday at 8:00 AM COL. To
-configure the 6 required secrets in your fork:
+configure the 7 required secrets in your fork:
 
 ### 1. Hotmail / Outlook.com
 
-| Variable | How to obtain |
-|---|---|
-| `HOTMAIL_ACCOUNT_ADDRESS` | Your Hotmail/Outlook.com address (e.g. `your-account@hotmail.com`) |
-| `MSAL_TOKEN_CACHE_JSON` | Paste the full JSON returned by `npx @softeria/ms-365-mcp-server --login` (see [Initial MSAL token setup](#initial-msal-token-setup)) |
+#### `HOTMAIL_ACCOUNT_ADDRESS`
 
-### 2. Gmail (OAuth2 Desktop application)
+Your Hotmail/Outlook.com address (e.g. `your-account@hotmail.com`).
+No additional configuration required — just the address you use to
+log in to Hotmail.
 
-| Variable | How to obtain |
+#### `MSAL_CLIENT_ID`
+
+Application (client) ID of the Azure App Registration that authenticates
+against Microsoft Graph. See detailed steps in
+[Initial MSAL token setup](#initial-msal-token-setup).
+
+#### `MSAL_TOKEN_CACHE_JSON`
+
+Native MSAL Node JSON with `AppMetadata` included. Generated with
+`node scripts/get-msal-token-cache.mjs` after authenticating with the
+Hotmail/Outlook.com account. See
+[Initial MSAL token setup](#initial-msal-token-setup).
+
+### 2. Gmail (OAuth2 Desktop application) — Step by step
+
+**⚠️ Important:** the instructions assume your Gmail account does NOT
+have Google's Advanced Protection Program (APP) enabled. If your
+account has APP, you must use a different Gmail account as the report
+destination (see TF-3 in tasks.md).
+
+#### Step A: Create the project in Google Cloud Console
+
+1. Go to https://console.cloud.google.com/
+2. Top left, click the project dropdown → **"New Project"**
+3. **Project name:** `mail-digest` (or any name you prefer)
+4. **Organization:** leave default (no organization) or whatever applies
+5. Click **"Create"**
+6. Wait a few seconds for it to be created. You'll be notified in the top right
+7. Make sure the new project is selected (it should be highlighted top left)
+
+#### Step B: Enable Gmail API
+
+1. Hamburger menu (☰) → **"APIs & Services"** → **"Library"**
+2. In the search bar, type **"Gmail API"**
+3. Click the "Gmail API" result (from Google Enterprise API)
+4. Click **"Enable"** at the top
+5. Wait until it says "API enabled" (takes a few seconds)
+
+#### Step C: Configure OAuth Consent Screen
+
+1. Menu ☰ → **"APIs & Services"** → **"OAuth consent screen"**
+2. **User type:** choose **"External"** → click **"Create"**
+3. **App information:**
+   - **App name:** `Mail Digest`
+   - **User support email:** your email
+   - **App logo:** leave default (optional)
+4. **App domain:** leave everything blank (not required for testing)
+5. **Developer contact information:**
+   - **Email addresses:** your email
+6. Click **"Save and Continue"**
+7. **Scopes:** ⚠️ **THIS IS THE CRITICAL STEP** — DO NOT leave default.
+   - Click **"Add or remove scopes"**
+   - In the panel that appears, filter by `gmail` or scroll
+   - Check these 3 scopes (minimum):
+     - `https://www.googleapis.com/auth/gmail.send` ← **CRITICAL for sending emails**
+     - `https://www.googleapis.com/auth/openid` ← recommended
+     - `https://www.googleapis.com/auth/userinfo.email` ← recommended
+   - Click **"Update"**
+   - Verify it says "3 scopes" or more in the summary
+   - Click **"Save and Continue"**
+   - **If you skip this step**, you'll get intermittent errors like
+     `invalid_client` or `ERR_STREAM_PREMATURE_CLOSE` that look like network issues.
+8. **Test users:**
+   - Click **"+ ADD USERS"**
+   - Add the Gmail email you'll use as destination
+   - Click **"Add"**
+   - Click **"Save and Continue"**
+9. **Summary:** review and click **"Back to Dashboard"**
+
+#### Step D: Create OAuth 2.0 Client ID
+
+1. Menu ☰ → **"APIs & Services"** → **"Credentials"**
+2. At the top, click **"+ Create Credentials"** → **"OAuth client ID"**
+3. **Application type:** **"Desktop app"** (NOT "Web application" — important)
+4. **Name:** `mail-digest-cli`
+5. **Authorized redirect URIs:** leave default (no URLs needed)
+6. Click **"Create"**
+7. A modal appears with:
+   - **Client ID:** something like `371674345711-xxx.apps.googleusercontent.com` → **COPY IT**
+   - **Client secret:** a shorter string → **COPY IT** (this is the only time you see it in full; later it's shown truncated)
+8. Click **"OK"** — the credential is saved in the "OAuth 2.0 Client IDs" list
+
+#### Step E: Obtain the Refresh Token
+
+**DO NOT use Google's OAuth 2.0 Playground** (it's cumbersome). Use the
+script included in this repo:
+
+```bash
+cd "C:/Users/hetan/Documents/desarrollo/opencode/mcp"
+export GMAIL_CLIENT_ID="<the-client-id-you-copied>"
+export GMAIL_CLIENT_SECRET="<the-client-secret-you-copied>"
+node scripts/get-gmail-refresh-token.mjs
+```
+
+**What happens:**
+1. Browser opens to Google's screen
+2. Log in with the Gmail account you added as test user in Step C
+3. Google asks for permission for the app to send emails on your behalf (`gmail.send`)
+4. Click **"Allow"**
+5. Back in the terminal, a long JSON is printed → **that's the last line, it's your refresh token**
+6. Copy it for the next step
+
+**⚠️ If the script throws error `400: policy_enforced`:** your Gmail account has APP enabled. Use a different Gmail account.
+
+#### Step F: Gmail variables summary
+
+| Variable | Value |
 |---|---|
-| `GMAIL_OAUTH_CLIENT_ID` | Google Cloud Console → APIs & Services → Credentials → your OAuth 2.0 Client ID of type "Desktop app" |
-| `GMAIL_OAUTH_CLIENT_SECRET` | The Client Secret corresponding to the Client ID above |
-| `GMAIL_OAUTH_REFRESH_TOKEN` | OAuth2 flow with scope `https://www.googleapis.com/auth/gmail.send` and `access_type=offline`. Use the Google "OAuth 2.0 Playground" or a local script that performs the flow and captures the refresh_token |
-| `GMAIL_DESTINATION_ADDRESS` | The Gmail address where you want to receive the report (can be the same one that authorized the app, or any other that has permission) |
+| `GMAIL_OAUTH_CLIENT_ID` | The Client ID from Step D (e.g. `371674345711-xxx.apps.googleusercontent.com`) |
+| `GMAIL_OAUTH_CLIENT_SECRET` | The Client Secret from Step D |
+| `GMAIL_OAUTH_REFRESH_TOKEN` | The long string printed by the script in Step E |
+| `GMAIL_DESTINATION_ADDRESS` | The Gmail address where you want to receive the report (same as the test user) |
 
 ### 3. Configure secrets with the `gh` CLI
 
@@ -139,18 +244,23 @@ configure the 6 required secrets in your fork:
 # Replace the <...> placeholders with your real values.
 # For MSAL_TOKEN_CACHE_JSON, pass the JSON as a file:
 
-# Save the token cache to a temporary file
-npx @softeria/ms-365-mcp-server --login > /tmp/msal-cache.json
+# Save the token cache to a temporary file (DO NOT commit this file)
+node scripts/get-msal-token-cache.mjs > /tmp/msal-cache.json 2>&1
+tail -1 /tmp/msal-cache.json > /tmp/msal-cache-clean.json
 
 # Configure each secret
 gh secret set HOTMAIL_ACCOUNT_ADDRESS --body "your-account@hotmail.com"
-gh secret set MSAL_TOKEN_CACHE_JSON < /tmp/msal-cache.json
-gh secret set GMAIL_OAUTH_CLIENT_ID --body "<your-client-id>"
+gh secret set MSAL_CLIENT_ID --body "<your-azure-app-client-id>"
+gh secret set MSAL_TOKEN_CACHE_JSON < /tmp/msal-cache-clean.json
+gh secret set GMAIL_OAUTH_CLIENT_ID --body "<your-client-id>.apps.googleusercontent.com"
 gh secret set GMAIL_OAUTH_CLIENT_SECRET --body "<your-client-secret>"
-gh secret set GMAIL_OAUTH_REFRESH_TOKEN --body "<your-refresh-token>"
+gh secret set GMAIL_OAUTH_REFRESH_TOKEN --body "<refresh-token-printed-by-script>"
 gh secret set GMAIL_DESTINATION_ADDRESS --body "destination@gmail.com"
 
-# Verify they are all set
+# Clean up temporary files (they're secrets)
+rm /tmp/msal-cache.json /tmp/msal-cache-clean.json
+
+# Verify all 7 secrets are set
 gh secret list
 ```
 
@@ -230,6 +340,25 @@ consent screen of Google Cloud Console.
 
 **Solution:** Google Cloud Console → APIs & Services → OAuth consent
 screen → Test users → + ADD USERS → add your email.
+
+### Error: `invalid_client` or `ERR_STREAM_PREMATURE_CLOSE` from GitHub Actions (but works locally)
+
+**Cause:** the OAuth consent screen in Google Cloud Console is missing
+the `gmail.send` scope. The script works locally because the consent
+was granted at some point, but the runner's IP may get different
+behavior from Google if scopes are not declared.
+
+**Solution:**
+
+1. Google Cloud Console → APIs & Services → OAuth consent screen
+2. Click **"Add or remove scopes"** (in the "Data Access" section)
+3. Mark `https://www.googleapis.com/auth/gmail.send` (and any other
+   scopes you need)
+4. Click **"Update"** → **"Save and Continue"**
+5. Re-run `node scripts/get-gmail-refresh-token.mjs` to get a new
+   refresh token with the correct scope
+6. Update the secret: `gh secret set GMAIL_OAUTH_REFRESH_TOKEN --body "<new-refresh-token>"`
+7. Re-run the workflow
 
 ### Error: `Unable to locate executable file: pnpm` in GitHub Actions
 
