@@ -509,3 +509,30 @@ Renunciar a la integración con la cuenta principal y usar `cusuga004@gmail.com`
 - Apps Script como proxy (corre en infra de Google, bypassea APP)
 - Servicios de email de terceros (SendGrid, Mailgun, etc.)
 - Mantener forward (ya implementado, funciona)
+
+### TF-5: Agregar scopes al OAuth consent screen ✅ COMPLETADA
+
+**Tarea:** Agregar explícitamente los scopes `gmail.send`, `openid` y `userinfo.email` en el OAuth consent screen de Google Cloud Console.
+
+**Problema detectado:** El script funcionaba localmente pero fallaba persistentemente desde GitHub Actions con errores `invalid_client` o `ERR_STREAM_PREMATURE_CLOSE`. El root cause fue que el OAuth consent screen NO tenía declarado el scope `gmail.send` — Google lo aceptaba localmente (probablemente con algún workaround), pero rechazaba las requests del runner de GitHub Actions.
+
+**Pasos para arreglar:**
+
+1. Google Cloud Console → APIs & Services → OAuth consent screen
+2. Sección "Data Access" → click **"Add or remove scopes"**
+3. Marcar: `gmail.send`, `openid`, `userinfo.email`
+4. Click **"Update"** → **"Save and Continue"**
+5. Re-generar el refresh token con `node scripts/get-gmail-refresh-token.mjs`
+6. Actualizar el secret en GitHub: `gh secret set GMAIL_OAUTH_REFRESH_TOKEN --body "<nuevo-refresh-token>"`
+7. Re-correr el workflow
+
+**Resolución aplicada:**
+- Scopes `gmail.send`, `openid`, `userinfo.email` agregados al OAuth consent screen
+- Refresh token regenerado y actualizado en GitHub Secrets
+- Workflow pasó en verde después de la corrección
+- README actualizado (Paso C) para que futuros setups incluyan este paso crítico
+- Troubleshooting section del README ahora tiene una entrada específica para este error
+
+**Documentación adicional:**
+- Memoria guardada en engram como `discovery/google-oauth-scopes-mandatory`
+- Troubleshooting en README (ambos idiomas) cubre este escenario
